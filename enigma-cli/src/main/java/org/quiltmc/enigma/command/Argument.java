@@ -20,8 +20,11 @@ final class Argument<T> {
 	static final char NAME_DELIM = '=';
 
 	static final String ALTERNATIVES_DELIM = "|";
+
 	static final String BOOL_TYPE = true + ALTERNATIVES_DELIM + false;
 	static final String PATH_TYPE = "path";
+	static final String INT_TYPE = "int";
+	static final String PATTERN_TYPE = "regex";
 
 	static Argument<Path> ofReadablePath(String name, String explanation) {
 		return new Argument<>(name, PATH_TYPE, Argument::parseReadablePath, explanation);
@@ -48,7 +51,7 @@ final class Argument<T> {
 	}
 
 	/**
-	 * Creates a string argument whose {@code typeDescription} lists its allowed values.
+	 * Creates a string argument whose {@code typeDescription} lists expected values.
 	 */
 	static Argument<String> ofLenientEnum(String name, Class<? extends Enum<?>> type, String explanation) {
 		final String alternatives = Arrays.stream(type.getEnumConstants())
@@ -62,7 +65,7 @@ final class Argument<T> {
 	}
 
 	static Argument<Integer> ofInt(String name, Integer defaultValue, String explanation) {
-		return new Argument<>(name, "int", integer -> parseInt(integer, defaultValue), explanation);
+		return new Argument<>(name, INT_TYPE, integer -> parseInt(integer, defaultValue), explanation);
 	}
 
 	static Argument<String> ofString(String name, String typeDescription, String explanation) {
@@ -70,7 +73,7 @@ final class Argument<T> {
 	}
 
 	static Argument<Pattern> ofPattern(String name, String explanation) {
-		return new Argument<>(name, "regex", Argument::parsePattern, explanation);
+		return new Argument<>(name, PATTERN_TYPE, Argument::parsePattern, explanation);
 	}
 
 	private final String name;
