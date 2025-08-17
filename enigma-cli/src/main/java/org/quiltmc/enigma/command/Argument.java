@@ -11,6 +11,8 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 
 final class Argument<T> {
@@ -61,6 +63,10 @@ final class Argument<T> {
 
 	static Argument<String> ofString(String name, String typeDescription, String explanation) {
 		return new Argument<>(name, typeDescription, Function.identity(), explanation);
+	}
+
+	static Argument<Pattern> ofPattern(String name, String explanation) {
+		return new Argument<>(name, "regex", Argument::parsePattern, explanation);
 	}
 
 	private final String name;
@@ -139,6 +145,18 @@ final class Argument<T> {
 			.filter(string -> !string.isEmpty())
 			.map(Paths::get)
 			.map(Path::toAbsolutePath);
+	}
+
+	static Pattern parsePattern(String regex) {
+		if (regex == null || regex.isEmpty()) {
+			return null;
+		}
+
+		try {
+			return Pattern.compile(regex);
+		} catch (PatternSyntaxException e) {
+			throw new IllegalArgumentException(e);
+		}
 	}
 
 	@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
