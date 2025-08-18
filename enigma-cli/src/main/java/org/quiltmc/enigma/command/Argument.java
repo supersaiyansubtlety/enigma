@@ -15,6 +15,16 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 
+/**
+ * Represents an argument for a {@link Command}.
+ *
+ * <p> Contains the argument's name and other details, along with the logic to parse it from a string.<br>
+ * If parsing fails in a predictable way, an {@link IllegalArgumentException} should be thrown.
+ * Note that whether an argument is required is decided per-command; argument parsing should <em>not</em> throw exceptions
+ * when the argument is missing. Instead it should return {@code null}.
+ *
+ * @param <T> the type of the argument
+ */
 final class Argument<T> {
 	static final char SEPARATOR = ' ';
 	static final char NAME_DELIM = '=';
@@ -64,8 +74,8 @@ final class Argument<T> {
 		return new Argument<>(name, BOOL_TYPE, Boolean::parseBoolean, explanation);
 	}
 
-	static Argument<Integer> ofInt(String name, Integer defaultValue, String explanation) {
-		return new Argument<>(name, INT_TYPE, integer -> parseInt(integer, defaultValue), explanation);
+	static Argument<Integer> ofInt(String name, String explanation) {
+		return new Argument<>(name, INT_TYPE, Argument::parseInt, explanation);
 	}
 
 	static Argument<String> ofString(String name, String typeDescription, String explanation) {
@@ -87,9 +97,8 @@ final class Argument<T> {
 	 * <p> See static factory methods for common argument types.
 	 *
 	 * @param name the name of the argument; may not contain any space or {@value #NAME_DELIM} characters
-	 * @param typeDescription a short description of the type of value to expect; by convention these are in kebab-case
-	 * 							except for {@link #ofLenientEnum(String, Class, String) enums} and
-	 * 							{@link #ofBool(String, String) booleans}
+	 * @param typeDescription a short description of the type of value to expect; conventional descriptions are in
+	 *                          kebab-case with alternatives separated by {@value ALTERNATIVES_DELIM}
 	 * @param explanation an extended explanation of what the argument accepts and what it's for
 	 */
 	Argument(String name, String typeDescription, Function<String, T> fromString, String explanation) {
@@ -166,9 +175,9 @@ final class Argument<T> {
 		}
 	}
 
-	static Integer parseInt(String integer, Integer defaultValue) {
+	static Integer parseInt(String integer) {
 		if (integer == null || integer.isEmpty()) {
-			return defaultValue;
+			return null;
 		} else {
 			try {
 				return Integer.parseInt(integer);
