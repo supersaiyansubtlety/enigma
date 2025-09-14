@@ -12,7 +12,10 @@ import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.TreeNode;
+import java.awt.*;
+import java.awt.event.InvocationEvent;
 import java.util.Comparator;
+import java.util.function.Supplier;
 
 public class ClassSelectorClassNode extends SortedMutableTreeNode {
 	private final ClassEntry obfEntry;
@@ -42,6 +45,10 @@ public class ClassSelectorClassNode extends SortedMutableTreeNode {
 	 * @param updateIfPresent whether to update the stats if they have already been generated for this node
 	 */
 	public void reloadStats(Gui gui, ClassSelector selector, boolean updateIfPresent) {
+		this.reloadStats(gui, selector, updateIfPresent, Toolkit.getDefaultToolkit().getSystemEventQueue(), () -> false);
+	}
+
+	public void reloadStats(Gui gui, ClassSelector selector, boolean updateIfPresent, EventQueue events, Supplier<Boolean> shouldAbort) {
 		StatsGenerator generator = gui.getController().getStatsGenerator();
 		if (generator == null) {
 			return;
@@ -71,12 +78,16 @@ public class ClassSelectorClassNode extends SortedMutableTreeNode {
 					// ignoring this error should never cause issues since it only occurs at startup
 				}
 
-				SwingUtilities.invokeLater(() -> selector.reload(ClassSelectorClassNode.this, false));
+				SwingUtilities.invokeLater(() -> selector.reload(ClassSelectorClassNode.this, events, shouldAbort));
 			}
 		};
 
 		if (Config.main().features.enableClassTreeStatIcons.value()) {
-			SwingUtilities.invokeLater(iconUpdateWorker::execute);
+			events.postEvent(new InvocationEvent(this, () -> {
+				if (!shouldAbort.get()) {
+					iconUpdateWorker.execute();
+				}
+			}));
 		}
 	}
 

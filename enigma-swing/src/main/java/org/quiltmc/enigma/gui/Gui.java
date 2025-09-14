@@ -58,17 +58,17 @@ import javax.swing.JSplitPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
-import java.awt.BorderLayout;
-import java.awt.Container;
-import java.awt.Dimension;
-import java.awt.Point;
+import java.awt.*;
+import java.awt.event.InvocationEvent;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntFunction;
+import java.util.function.Supplier;
 
 public class Gui {
 	private final MainWindow mainWindow;
@@ -104,6 +104,9 @@ public class Gui {
 	public final JFileChooser exportJarFileChooser;
 	public final SearchDialog searchDialog;
 
+	private final EventQueue reloadStatsQueue;
+	private final AtomicBoolean discardStatReload;
+
 	private final boolean testEnvironment;
 
 	public Gui(EnigmaProfile profile, Set<EditableType> editableTypes, boolean testEnvironment) {
@@ -132,6 +135,9 @@ public class Gui {
 		this.testEnvironment = testEnvironment;
 
 		this.showsProgressBars = true;
+
+		this.reloadStatsQueue = new EventQueue();
+		this.discardStatReload = new AtomicBoolean(false);
 
 		this.setupUi();
 
@@ -603,7 +609,15 @@ public class Gui {
 			allClassesSelector.restoreExpansionState(expansionState);
 			deobfuscatedClassSelector.restoreExpansionState(deobfuscatedPanelExpansionState);
 			obfuscatedClassSelector.restoreExpansionState(obfuscatedPanelExpansionState);
-			this.reloadStats(classEntry, false);
+			if (this.reloadStatsQueue.peekEvent() != null) {
+				// discard and wait for now-obsolete prior reload work
+				this.discardStatReload.set(true);
+				final CompletableFuture<?> discardComplete = new CompletableFuture<>();
+				this.reloadStatsQueue.postEvent(new InvocationEvent(this, () -> discardComplete.complete(null)));
+				discardComplete.join();
+				this.discardStatReload.set(false);
+			}
+			this.reloadStats(classEntry, false, this.reloadStatsQueue, this.discardStatReload::get);
 		}
 	}
 
@@ -613,17 +627,23 @@ public class Gui {
 	 * @param propagate whether to also reload ancestors of the class
 	 */
 	public void reloadStats(ClassEntry classEntry, boolean propagate) {
+		this.reloadStats(classEntry, propagate, Toolkit.getDefaultToolkit().getSystemEventQueue(), () -> false);
+	}
+
+	public void reloadStats(ClassEntry classEntry, boolean propagate, EventQueue events, Supplier<Boolean> shouldAbort) {
 		List<ClassEntry> toUpdate = new ArrayList<>();
 		toUpdate.add(classEntry);
 		if (propagate) {
-			Collection<ClassEntry> parents = this.controller.getProject().getJarIndex().getIndex(InheritanceIndex.class).getAncestors(classEntry);
+			Collection<ClassEntry> parents = this.controller.getProject().getJarIndex()
+				.getIndex(InheritanceIndex.class)
+				.getAncestors(classEntry);
 			toUpdate.addAll(parents);
 		}
 
 		for (Docker value : this.dockerManager.getDockers()) {
 			if (value instanceof ClassesDocker docker) {
 				for (ClassEntry entry : toUpdate) {
-					docker.getClassSelector().reloadStats(entry);
+					docker.getClassSelector().reloadStats(entry, events, shouldAbort);
 				}
 			}
 		}

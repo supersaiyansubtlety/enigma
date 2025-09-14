@@ -14,10 +14,13 @@ import javax.swing.ToolTipManager;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
+import java.awt.*;
+import java.awt.event.InvocationEvent;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Supplier;
 
 public class ClassSelector extends JTree {
 	public static final Comparator<ClassEntry> DEOBF_CLASS_COMPARATOR = Comparator.comparing(ClassEntry::getFullName);
@@ -273,13 +276,24 @@ public class ClassSelector extends JTree {
 	 * this false to avoid the possibility of concurrency issues.
 	 */
 	public void reload(SortedMutableTreeNode node, boolean instant) {
+		if (instant) {
+			DefaultTreeModel model = (DefaultTreeModel) this.getModel();
+			if (model != null) {
+				model.reload(node);
+			}
+		} else {
+			this.reload(node, Toolkit.getDefaultToolkit().getSystemEventQueue(), () -> false);
+		}
+	}
+
+	public void reload(SortedMutableTreeNode node, EventQueue events, Supplier<Boolean> shouldAbort) {
 		DefaultTreeModel model = (DefaultTreeModel) this.getModel();
 		if (model != null) {
-			if (instant) {
-				model.reload(node);
-			} else {
-				SwingUtilities.invokeLater(() -> model.reload(node));
-			}
+			events.postEvent(new InvocationEvent(this, () -> {
+				if (!shouldAbort.get()) {
+					model.reload(node);
+				}
+			}));
 		}
 	}
 
@@ -297,9 +311,13 @@ public class ClassSelector extends JTree {
 	 * @param classEntry the class to reload stats for
 	 */
 	public void reloadStats(ClassEntry classEntry) {
+		this.reloadStats(classEntry, Toolkit.getDefaultToolkit().getSystemEventQueue(), () -> false);
+	}
+
+	public void reloadStats(ClassEntry classEntry, EventQueue events, Supplier<Boolean> shouldAbort) {
 		ClassSelectorClassNode node = this.packageManager.getClassNode(classEntry);
 		if (node != null) {
-			node.reloadStats(this.controller.getGui(), this, true);
+			node.reloadStats(this.controller.getGui(), this, true, events, shouldAbort);
 		}
 	}
 
