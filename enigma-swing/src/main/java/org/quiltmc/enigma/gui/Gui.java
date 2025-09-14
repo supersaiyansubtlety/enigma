@@ -612,7 +612,7 @@ public class Gui {
 			if (this.reloadStatsQueue.peekEvent() != null) {
 				// discard and wait for now-obsolete prior reload work
 				this.discardStatReload.set(true);
-				final CompletableFuture<?> discardComplete = new CompletableFuture<>();
+				final CompletableFuture<Void> discardComplete = new CompletableFuture<>();
 				this.reloadStatsQueue.postEvent(new InvocationEvent(this, () -> discardComplete.complete(null)));
 				discardComplete.join();
 				this.discardStatReload.set(false);
