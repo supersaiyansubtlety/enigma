@@ -1,5 +1,6 @@
 package org.quiltmc.enigma.network;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.quiltmc.enigma.network.packet.Packet;
 import org.quiltmc.enigma.network.packet.PacketRegistry;
 import org.tinylog.Logger;
@@ -12,6 +13,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.concurrent.CompletableFuture;
 
 public abstract class EnigmaClient {
 	protected boolean logPackets = false;
@@ -20,7 +22,8 @@ public abstract class EnigmaClient {
 
 	private final String ip;
 	private final int port;
-	private Socket socket;
+	@VisibleForTesting
+	Socket socket;
 	private DataOutput output;
 
 	public EnigmaClient(ClientPacketHandler handler, String ip, int port) {
@@ -29,44 +32,85 @@ public abstract class EnigmaClient {
 		this.port = port;
 	}
 
-	public void connect() throws IOException {
+	public CompletableFuture<Void> connect() throws IOException {
 		this.socket = new Socket(this.ip, this.port);
 		this.output = new DataOutputStream(this.socket.getOutputStream());
-		Thread thread = new Thread(() -> {
-			try {
-				DataInput input = new DataInputStream(this.socket.getInputStream());
-				while (true) {
-					int packetId;
+		return CompletableFuture.runAsync(
+				() -> {
 					try {
-						packetId = input.readUnsignedByte();
-					} catch (EOFException | SocketException e) {
-						break;
-					}
+						DataInput input = new DataInputStream(this.socket.getInputStream());
+						while (true) {
+							int packetId;
+							try {
+								packetId = input.readUnsignedByte();
+							} catch (EOFException | SocketException e) {
+								break;
+							}
 
-					Packet<ClientPacketHandler> packet = PacketRegistry.readS2CPacket(packetId, input);
-					if (packet == null) {
-						throw new IOException("Received invalid packet id " + packetId);
-					}
+							Packet<ClientPacketHandler> packet = PacketRegistry.readS2CPacket(packetId, input);
+							if (packet == null) {
+								throw new IOException("Received invalid packet id " + packetId);
+							}
 
-					if (this.logPackets) {
-						Logger.info("Received packet {} (id {})", packet, packetId);
-					}
+							if (this.logPackets) {
+								Logger.info("Received packet {} (id {})", packet, packetId);
+							}
 
-					this.runOnThread(() -> {
-						try {
-							packet.handle(this.handler);
-						} catch (Exception e) {
-							Logger.error(e, "Failed to handle packet!");
+							this.runOnThread(() -> {
+								try {
+									packet.handle(this.handler);
+								} catch (Exception e) {
+									Logger.error(e, "Failed to handle packet!");
+								}
+							});
 						}
-					});
+					} catch (IOException e) {
+						this.handler.disconnectIfConnected(e.toString());
+					}
+				},
+				runnable -> {
+					Thread thread = new Thread(runnable);
+					thread.setName("Client I/O thread");
+					thread.setDaemon(true);
+					thread.start();
 				}
-			} catch (IOException e) {
-				this.handler.disconnectIfConnected(e.toString());
-			}
-		});
-		thread.setName("Client I/O thread");
-		thread.setDaemon(true);
-		thread.start();
+		);
+
+		// Thread thread = new Thread(() -> {
+		// 	try {
+		// 		DataInput input = new DataInputStream(this.socket.getInputStream());
+		// 		while (true) {
+		// 			int packetId;
+		// 			try {
+		// 				packetId = input.readUnsignedByte();
+		// 			} catch (EOFException | SocketException e) {
+		// 				break;
+		// 			}
+		//
+		// 			Packet<ClientPacketHandler> packet = PacketRegistry.readS2CPacket(packetId, input);
+		// 			if (packet == null) {
+		// 				throw new IOException("Received invalid packet id " + packetId);
+		// 			}
+		//
+		// 			if (this.logPackets) {
+		// 				Logger.info("Received packet {} (id {})", packet, packetId);
+		// 			}
+		//
+		// 			this.runOnThread(() -> {
+		// 				try {
+		// 					packet.handle(this.handler);
+		// 				} catch (Exception e) {
+		// 					Logger.error(e, "Failed to handle packet!");
+		// 				}
+		// 			});
+		// 		}
+		// 	} catch (IOException e) {
+		// 		this.handler.disconnectIfConnected(e.toString());
+		// 	}
+		// });
+		// thread.setName("Client I/O thread");
+		// thread.setDaemon(true);
+		// thread.start();
 	}
 
 	public synchronized void disconnect() {

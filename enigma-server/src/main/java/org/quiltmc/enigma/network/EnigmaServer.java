@@ -44,7 +44,8 @@ public abstract class EnigmaServer {
 
 	private final int port;
 	private ServerSocket socket;
-	private final List<Socket> clients = new CopyOnWriteArrayList<>();
+	@VisibleForTesting
+	final List<Socket> clients = new CopyOnWriteArrayList<>();
 	private final Map<Socket, String> usernames = new HashMap<>();
 	// Clients are only approved once they finish the login exchange by confirming the mapping sync
 	private final Set<Socket> unapprovedClients = new HashSet<>();
@@ -133,7 +134,7 @@ public abstract class EnigmaServer {
 		this.runOnThread(() -> {
 			if (this.socket != null && !this.socket.isClosed()) {
 				for (Socket client : this.clients) {
-					this.kick(client, "disconnect.server_closed");
+					// this.kick(client, "disconnect.server_closed");
 				}
 
 				try {

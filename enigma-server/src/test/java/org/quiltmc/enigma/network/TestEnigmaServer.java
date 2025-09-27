@@ -4,6 +4,7 @@ import org.quiltmc.enigma.api.translation.mapping.EntryRemapper;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,7 +28,12 @@ public class TestEnigmaServer extends EnigmaServer {
 		var tasksThread = new Thread(() -> {
 			while (true) {
 				try {
-					this.tasks.take().run();
+					// synchronized (this.tasks) {
+						this.tasks.take().run();
+					// 	if (this.tasks.isEmpty()) {
+					// 		this.tasks.notify();
+					// 	}
+					// }
 				} catch (InterruptedException e) {
 					break;
 				}
@@ -41,6 +47,34 @@ public class TestEnigmaServer extends EnigmaServer {
 	@Override
 	protected void runOnThread(Runnable task) {
 		this.tasks.add(task);
+	}
+
+	// public void awaitTasks() {
+	// 	synchronized (this.tasks) {
+	// 		while (!this.tasks.isEmpty()) {
+	// 			try {
+	// 				this.tasks.wait(3000);
+	// 			} catch (InterruptedException e) {
+	// 				throw new RuntimeException(e);
+	// 			}
+	// 		}
+	// 	}
+	// }
+	// public boolean hasTasks() {
+	// 	return !this.tasks.isEmpty();
+	// }
+
+	public boolean hasOpenClients() {
+		return this.clients.stream().anyMatch(socket -> !socket.isClosed());
+	}
+
+	public List<Socket> getClients() {
+		return this.clients;
+	}
+
+	@Override
+	public boolean isRunning() {
+		return super.isRunning();
 	}
 
 	@Override
