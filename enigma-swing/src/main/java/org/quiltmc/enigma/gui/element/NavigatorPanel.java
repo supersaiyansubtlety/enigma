@@ -10,7 +10,7 @@ import org.quiltmc.enigma.gui.util.GuiUtil;
 import org.quiltmc.enigma.api.source.TokenType;
 import org.quiltmc.enigma.api.translation.representation.entry.Entry;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;

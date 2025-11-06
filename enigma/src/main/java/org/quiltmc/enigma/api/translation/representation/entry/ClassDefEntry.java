@@ -9,7 +9,7 @@ import org.quiltmc.enigma.api.translation.representation.Signature;
 
 import java.util.Arrays;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public class ClassDefEntry extends ClassEntry implements DefEntry<ClassEntry> {
 	private final AccessFlags access;

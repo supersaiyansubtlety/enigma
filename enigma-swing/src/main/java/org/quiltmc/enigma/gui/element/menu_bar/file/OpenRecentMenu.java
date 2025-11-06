@@ -6,7 +6,7 @@ import org.quiltmc.enigma.gui.config.Config;
 import org.quiltmc.enigma.gui.element.menu_bar.AbstractEnigmaMenu;
 import org.quiltmc.enigma.util.I18n;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import javax.swing.JMenuItem;
 import java.nio.file.Files;
 import java.nio.file.Path;

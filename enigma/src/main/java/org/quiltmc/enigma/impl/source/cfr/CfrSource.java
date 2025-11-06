@@ -16,7 +16,7 @@ import org.benf.cfr.reader.util.collections.ListFactory;
 import org.benf.cfr.reader.util.getopt.Options;
 import org.benf.cfr.reader.util.getopt.OptionsImpl;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public class CfrSource implements Source {
 	private final String className;

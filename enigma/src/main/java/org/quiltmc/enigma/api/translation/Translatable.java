@@ -4,7 +4,7 @@ import org.quiltmc.enigma.api.translation.mapping.EntryMap;
 import org.quiltmc.enigma.api.translation.mapping.EntryMapping;
 import org.quiltmc.enigma.api.translation.mapping.EntryResolver;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public interface Translatable {
 	TranslateResult<? extends Translatable> extendedTranslate(Translator translator, EntryResolver resolver, EntryMap<EntryMapping> mappings);

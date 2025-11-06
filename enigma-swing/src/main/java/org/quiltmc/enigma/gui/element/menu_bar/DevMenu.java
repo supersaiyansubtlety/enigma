@@ -8,7 +8,7 @@ import org.quiltmc.enigma.util.EntryTreePrinter;
 import org.quiltmc.enigma.util.I18n;
 import org.tinylog.Logger;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import javax.swing.JButton;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JFileChooser;

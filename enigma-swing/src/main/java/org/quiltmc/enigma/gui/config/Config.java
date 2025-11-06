@@ -26,7 +26,7 @@ import org.quiltmc.enigma.gui.config.theme.properties.composite.SyntaxPaneProper
 import org.quiltmc.enigma.util.I18n;
 import org.quiltmc.syntaxpain.SyntaxpainConfiguration;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import javax.swing.UnsupportedLookAndFeelException;
 import java.awt.Dimension;
 import java.awt.Point;

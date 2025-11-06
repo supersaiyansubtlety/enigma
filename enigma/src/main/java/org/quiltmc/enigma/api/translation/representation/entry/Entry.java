@@ -7,7 +7,7 @@ import org.quiltmc.enigma.util.validation.ValidationContext;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public interface Entry<P extends Entry<?>> extends Translatable {
 	/**

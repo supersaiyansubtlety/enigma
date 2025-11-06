@@ -33,7 +33,7 @@ import com.google.common.collect.ImmutableListMultimap;
 import org.objectweb.asm.Opcodes;
 import org.tinylog.Logger;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
@@ -360,7 +360,7 @@ public class Enigma {
 			this.services.put(serviceType, service);
 		}
 
-		private <T extends EnigmaService> EnigmaServiceContext<T> getServiceContext(@Nullable EnigmaProfile.Service serviceProfile) {
+		private <T extends EnigmaService> EnigmaServiceContext<T> getServiceContext(EnigmaProfile.@Nullable Service serviceProfile) {
 			return new EnigmaServiceContext<>() {
 				@Override
 				public Optional<Either<String, List<String>>> getArgument(String key) {

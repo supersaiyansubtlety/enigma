@@ -12,7 +12,7 @@ import org.quiltmc.enigma.command.PrintStatsCommand.Optional;
 import org.quiltmc.enigma.util.I18n;
 import org.tinylog.Logger;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.Set;

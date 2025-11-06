@@ -18,7 +18,7 @@ import org.quiltmc.enigma.command.FillClassMappingsCommand.Required;
 import org.quiltmc.enigma.command.FillClassMappingsCommand.Optional;
 import org.tinylog.Logger;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import java.nio.file.Path;
 import java.util.List;
 

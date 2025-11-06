@@ -8,7 +8,7 @@ import org.quiltmc.enigma.impl.translation.mapping.IdentifierValidation;
 import org.quiltmc.enigma.util.validation.ValidationContext;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import java.util.List;
 import java.util.Objects;
 

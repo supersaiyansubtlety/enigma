@@ -29,7 +29,7 @@ import org.quiltmc.enigma.impl.plugin.BuiltinPlugin;
 import org.quiltmc.enigma.util.validation.PrintNotifier;
 import org.quiltmc.enigma.util.validation.ValidationContext;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;

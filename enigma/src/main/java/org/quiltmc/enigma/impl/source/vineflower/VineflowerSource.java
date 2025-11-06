@@ -14,7 +14,7 @@ import org.jetbrains.java.decompiler.main.extern.TextTokenVisitor;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public class VineflowerSource implements Source {
 	private final IContextSource contextSource;

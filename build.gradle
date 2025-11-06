@@ -22,6 +22,9 @@ subprojects {
 		implementation libs.guava
 		implementation libs.gson
 
+		// DEBUG
+		implementation libs.jspecify
+
 		implementation libs.bundles.tinylog
 
 		testImplementation libs.junit

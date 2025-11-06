@@ -11,7 +11,7 @@ import org.quiltmc.config.api.values.ValueMap;
 import org.quiltmc.enigma.gui.docker.Docker;
 import org.quiltmc.enigma.gui.docker.DockerManager;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -44,8 +44,7 @@ public class DockerConfig extends ReflectiveConfig {
 		this.putButtonLocation(docker.getId(), new Docker.Location(side, verticalLocation));
 	}
 
-	@Nullable
-	public Docker.Location getButtonLocation(String id) {
+	public Docker.@Nullable Location getButtonLocation(String id) {
 		return this.buttonLocations.value().get(id);
 	}
 

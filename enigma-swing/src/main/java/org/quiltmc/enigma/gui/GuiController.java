@@ -74,7 +74,7 @@ import org.quiltmc.enigma.util.validation.ParameterizedMessage;
 import org.quiltmc.enigma.util.validation.ValidationContext;
 import org.tinylog.Logger;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import java.awt.Desktop;

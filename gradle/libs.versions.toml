@@ -13,6 +13,9 @@ tinylog = "2.6.2"
 quilt_config = "1.3.2"
 javaparser = "3.27.0"
 
+# DEBUG
+jspecify = "1.0.0"
+
 vineflower = "1.11.0"
 cfr = "0.2.2"
 procyon = "0.6.0"
@@ -43,6 +46,9 @@ syntaxpain = { module = "org.quiltmc:syntaxpain", version.ref = "syntaxpain" }
 swing_dpi = { module = "com.github.lukeu:swing-dpi", version.ref = "swing_dpi" }
 fontchooser = { module = "org.drjekyll:fontchooser", version.ref = "fontchooser" }
 javaparser = { module = "com.github.javaparser:javaparser-core", version.ref = "javaparser" }
+
+# DEBUG
+jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
 
 vineflower = { module = "org.vineflower:vineflower", version.ref = "vineflower" }
 cfr = { module = "net.fabricmc:cfr", version.ref = "cfr" }

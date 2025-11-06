@@ -13,7 +13,7 @@ import org.quiltmc.enigma.command.ArgsParser.Empty;
 import org.quiltmc.enigma.util.Utils;
 import org.quiltmc.enigma.command.ConvertMappingsCommand.Required;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 

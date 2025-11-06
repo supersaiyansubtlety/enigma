@@ -3,7 +3,7 @@ package org.quiltmc.enigma.api.translation.mapping;
 import org.quiltmc.enigma.api.Enigma;
 import org.quiltmc.enigma.api.source.TokenType;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public record EntryMapping(
 		@Nullable String targetName,

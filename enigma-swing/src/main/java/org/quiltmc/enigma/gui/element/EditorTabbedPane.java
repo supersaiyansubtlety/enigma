@@ -15,7 +15,7 @@ import org.quiltmc.enigma.api.translation.representation.entry.Entry;
 import java.awt.Component;
 import java.awt.event.MouseEvent;
 import java.util.Iterator;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import javax.swing.InputMap;
 import javax.swing.JComponent;
 import javax.swing.JTabbedPane;

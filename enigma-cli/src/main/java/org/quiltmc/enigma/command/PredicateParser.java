@@ -2,7 +2,7 @@ package org.quiltmc.enigma.command;
 
 import com.google.common.annotations.VisibleForTesting;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import java.util.Stack;
 import java.util.function.BiPredicate;
 import java.util.function.Function;

@@ -2,7 +2,7 @@ package org.quiltmc.enigma.api.translation.mapping;
 
 import org.quiltmc.enigma.api.translation.representation.entry.Entry;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public class MappingPair<E extends Entry<?>, M> {
 	private final E entry;

@@ -27,7 +27,7 @@ import org.quiltmc.enigma.api.translation.mapping.EntryRemapper;
 import org.quiltmc.enigma.util.AsmUtil;
 import org.objectweb.asm.tree.ClassNode;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public class ProcyonDecompiler implements Decompiler {
 	private final SourceSettings settings;

@@ -20,7 +20,7 @@ import org.quiltmc.enigma.util.Utils;
 import org.quiltmc.enigma.command.MapSpecializedMethodsCommand.Required;
 import org.quiltmc.enigma.command.MapSpecializedMethodsCommand.Optional;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;

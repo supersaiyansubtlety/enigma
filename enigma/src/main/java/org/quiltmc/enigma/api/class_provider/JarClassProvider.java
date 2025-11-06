@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableSet;
 import org.quiltmc.enigma.util.AsmUtil;
 import org.objectweb.asm.tree.ClassNode;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;

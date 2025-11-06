@@ -2,7 +2,7 @@ package org.quiltmc.enigma.api.translation.mapping.tree;
 
 import org.quiltmc.enigma.api.translation.representation.entry.Entry;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;

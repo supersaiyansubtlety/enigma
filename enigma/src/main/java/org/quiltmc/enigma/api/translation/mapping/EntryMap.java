@@ -3,7 +3,7 @@ package org.quiltmc.enigma.api.translation.mapping;
 import org.quiltmc.enigma.api.translation.mapping.tree.EntryTreeNode;
 import org.quiltmc.enigma.api.translation.representation.entry.Entry;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import java.util.stream.Stream;
 
 public interface EntryMap<T> {

@@ -2,7 +2,7 @@ package org.quiltmc.enigma.api.class_handle;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public final class ClassHandleError {
 	public final Type type;

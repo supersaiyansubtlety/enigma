@@ -7,7 +7,7 @@ import org.quiltmc.enigma.api.source.SourceSettings;
 import org.quiltmc.enigma.api.translation.mapping.EntryRemapper;
 import org.objectweb.asm.tree.ClassNode;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import java.util.Collection;
 import java.util.List;
 

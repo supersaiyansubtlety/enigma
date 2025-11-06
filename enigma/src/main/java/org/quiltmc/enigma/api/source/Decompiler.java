@@ -2,7 +2,7 @@ package org.quiltmc.enigma.api.source;
 
 import org.quiltmc.enigma.api.translation.mapping.EntryRemapper;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public interface Decompiler {
 	default Source getUndocumentedSource(String className) {

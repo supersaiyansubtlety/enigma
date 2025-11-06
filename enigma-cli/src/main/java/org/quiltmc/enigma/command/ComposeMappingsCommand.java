@@ -15,7 +15,7 @@ import org.quiltmc.enigma.util.Utils;
 import org.quiltmc.enigma.command.ComposeMappingsCommand.Required;
 import org.quiltmc.enigma.command.ComposeMappingsCommand.Optional;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 
