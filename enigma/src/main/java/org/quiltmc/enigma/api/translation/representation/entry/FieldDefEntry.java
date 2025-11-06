@@ -8,7 +8,7 @@ import org.quiltmc.enigma.api.translation.representation.AccessFlags;
 import org.quiltmc.enigma.api.translation.representation.Signature;
 import org.quiltmc.enigma.api.translation.representation.TypeDescriptor;
 
-import javax.annotation.Nonnull;
+import org.jspecify.annotations.NonNull;
 
 public class FieldDefEntry extends FieldEntry implements DefEntry<ClassEntry> {
 	private final AccessFlags access;
@@ -40,7 +40,7 @@ public class FieldDefEntry extends FieldEntry implements DefEntry<ClassEntry> {
 	}
 
 	@Override
-	protected TranslateResult<FieldEntry> extendedTranslate(Translator translator, @Nonnull EntryMapping mapping) {
+	protected TranslateResult<FieldEntry> extendedTranslate(Translator translator, @NonNull EntryMapping mapping) {
 		TypeDescriptor translatedDesc = translator.translate(this.desc);
 		Signature translatedSignature = translator.translate(this.signature);
 		String translatedName = mapping.targetName() != null ? mapping.targetName() : this.name;

@@ -8,7 +8,7 @@ import org.quiltmc.enigma.api.translation.mapping.EntryMapping;
 import org.quiltmc.enigma.api.translation.mapping.EntryResolver;
 import org.quiltmc.enigma.api.translation.mapping.ResolutionStrategy;
 
-import javax.annotation.Nonnull;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 public abstract class ParentedEntry<P extends Entry<?>> implements Entry<P> {
@@ -30,7 +30,7 @@ public abstract class ParentedEntry<P extends Entry<?>> implements Entry<P> {
 	@Override
 	public abstract ParentedEntry<P> withName(String name);
 
-	protected abstract TranslateResult<? extends ParentedEntry<P>> extendedTranslate(Translator translator, @Nonnull EntryMapping mapping);
+	protected abstract TranslateResult<? extends ParentedEntry<P>> extendedTranslate(Translator translator, @NonNull EntryMapping mapping);
 
 	@Override
 	public String getName() {

@@ -3,7 +3,7 @@ package org.quiltmc.enigma.command;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.UnmodifiableIterator;
 
-import javax.annotation.Nonnull;
+import org.jspecify.annotations.NonNull;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
@@ -202,7 +202,7 @@ final class ArgsParser<P> implements Iterable<Argument<?>> {
 	}
 
 	@Override
-	@Nonnull
+	@NonNull
 	public UnmodifiableIterator<Argument<?>> iterator() {
 		return this.args.iterator();
 	}

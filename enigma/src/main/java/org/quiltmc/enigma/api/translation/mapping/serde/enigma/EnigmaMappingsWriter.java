@@ -37,7 +37,7 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
-import javax.annotation.Nonnull;
+import org.jspecify.annotations.NonNull;
 
 public enum EnigmaMappingsWriter implements MappingsWriter {
 	FILE {
@@ -266,7 +266,7 @@ public enum EnigmaMappingsWriter implements MappingsWriter {
 		return result;
 	}
 
-	protected String writeClass(ClassEntry entry, @Nonnull EntryMapping mapping) {
+	protected String writeClass(ClassEntry entry, @NonNull EntryMapping mapping) {
 		StringBuilder builder = new StringBuilder(EnigmaFormat.CLASS + " ");
 		builder.append(entry.getName()).append(' ');
 		this.writeMapping(builder, mapping);
@@ -274,7 +274,7 @@ public enum EnigmaMappingsWriter implements MappingsWriter {
 		return builder.toString();
 	}
 
-	protected String writeMethod(MethodEntry entry, @Nonnull EntryMapping mapping) {
+	protected String writeMethod(MethodEntry entry, @NonNull EntryMapping mapping) {
 		StringBuilder builder = new StringBuilder(EnigmaFormat.METHOD + " ");
 		builder.append(entry.getName()).append(' ');
 		this.writeMapping(builder, mapping);
@@ -284,7 +284,7 @@ public enum EnigmaMappingsWriter implements MappingsWriter {
 		return builder.toString();
 	}
 
-	protected String writeField(FieldEntry entry, @Nonnull EntryMapping mapping) {
+	protected String writeField(FieldEntry entry, @NonNull EntryMapping mapping) {
 		StringBuilder builder = new StringBuilder(EnigmaFormat.FIELD + " ");
 		builder.append(entry.getName()).append(' ');
 		this.writeMapping(builder, mapping);
@@ -294,7 +294,7 @@ public enum EnigmaMappingsWriter implements MappingsWriter {
 		return builder.toString();
 	}
 
-	protected String writeArgument(LocalVariableEntry entry, @Nonnull EntryMapping mapping) {
+	protected String writeArgument(LocalVariableEntry entry, @NonNull EntryMapping mapping) {
 		StringBuilder builder = new StringBuilder(EnigmaFormat.PARAMETER + " ");
 		builder.append(entry.getIndex()).append(" ");
 		if (mapping.targetName() != null) {
