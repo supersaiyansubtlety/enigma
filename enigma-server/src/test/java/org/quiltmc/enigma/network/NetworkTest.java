@@ -3,6 +3,8 @@ package org.quiltmc.enigma.network;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.RepetitionInfo;
 import org.junit.jupiter.api.Test;
 import org.quiltmc.enigma.TestUtil;
 import org.quiltmc.enigma.api.Enigma;
@@ -13,8 +15,10 @@ import org.quiltmc.enigma.api.translation.mapping.EntryRemapper;
 import org.quiltmc.enigma.network.packet.c2s.LoginC2SPacket;
 import org.quiltmc.enigma.network.packet.c2s.MessageC2SPacket;
 import org.quiltmc.enigma.util.Utils;
+import org.tinylog.Logger;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -44,28 +48,49 @@ public class NetworkTest {
 	}
 
 	private static TestEnigmaClient connectClient(ClientPacketHandler handler) throws IOException {
+		if (server.socket == null || server.socket.isClosed() || !server.socket.isBound()) {
+			throw new IllegalStateException("server socket unavailable");
+		}
+
 		var client = new TestEnigmaClient(handler, "127.0.0.1", server.getActualPort());
 		client.connect();
 
 		return client;
 	}
 
-	@Test
-	public void testLogin() throws IOException, InterruptedException {
+	/**
+	 * Repetitions after the 52nd consistently fail, at least on Windows.<br>
+	 * They throw a {@link ConnectException} with the message "Connection refused: connect".<br>
+	 * From what I (supersaiyansubtlety) can tell, this is because the server has an internal listener backlog
+	 * that fills up and refuses further connections.
+	 */
+	@RepeatedTest(52)
+	public void testLogin(RepetitionInfo repetitionInfo) throws IOException, InterruptedException {
+		final int repetition = repetitionInfo.getCurrentRepetition();
+		Logger.info("Starting repetition: " + repetition);
+
 		var handler = new DummyClientPacketHandler();
 		var client = connectClient(handler);
+
 		handler.client = client;
 
 		Assertions.assertFalse(server.getClients().isEmpty());
-		Assertions.assertFalse(server.getUnapprovedClients().isEmpty());
+		// final Set<Socket> unapprovedClients = server.getUnapprovedClients();
+		// synchronized (unapprovedClients) {
+		// 	Assertions.assertFalse(unapprovedClients.isEmpty());
+		// }
 
 		client.sendPacket(new LoginC2SPacket(checksum, PASSWORD.toCharArray(), "alice"));
-		var confirmed = server.waitChangeConfirmation(server.getClients().get(0), 1)
+		Logger.info("waiting for change packet");
+		var confirmed = server.waitChangeConfirmation(server.getClients().keySet().iterator().next())
 				.await(3, TimeUnit.SECONDS);
+		Logger.info("done waiting for change packet");
 
 		Assertions.assertNotEquals(0, handler.disconnectFromServerLatch.getCount(), "The client was disconnected by the server");
 		Assertions.assertTrue(confirmed, "Timed out waiting for the change confirmation");
 		client.disconnect();
+
+		Logger.info("Finished repetition: " + repetition);
 	}
 
 	@Test

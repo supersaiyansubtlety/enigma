@@ -5,6 +5,7 @@ import org.quiltmc.enigma.api.translation.mapping.EntryRemapper;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -24,7 +25,7 @@ public class TestEnigmaServer extends EnigmaServer {
 	public void start() throws IOException {
 		super.start();
 
-		var tasksThread = new Thread(() -> {
+		final var tasksThread = new Thread(() -> {
 			while (true) {
 				try {
 					this.tasks.take().run();
@@ -47,16 +48,23 @@ public class TestEnigmaServer extends EnigmaServer {
 	public void confirmChange(Socket client, int syncId) {
 		super.confirmChange(client, syncId);
 
-		var latch = this.changeConfirmationLatches.get(client);
-		if (latch != null) {
-			latch.countDown();
-		}
+		Objects
+			.requireNonNull(
+				this.changeConfirmationLatches.get(client),
+				() -> "no change latch to confirm for client: " + client
+			)
+			.countDown();
 	}
 
-	public CountDownLatch waitChangeConfirmation(Socket client, int count) {
-		var latch = new CountDownLatch(count);
-		this.changeConfirmationLatches.put(client, latch);
-		return latch;
+	public CountDownLatch waitChangeConfirmation(Socket client) {
+		if (!this.getClients().containsKey(client)) {
+			throw new IllegalStateException("trying to wait for change from non-client: " + client);
+		}
+
+		return Objects.requireNonNull(
+			this.changeConfirmationLatches.get(client),
+			() -> "not change latch to await for client: " + client
+		);
 	}
 
 	@Override
@@ -66,5 +74,29 @@ public class TestEnigmaServer extends EnigmaServer {
 		}
 
 		super.sendMessage(message);
+	}
+
+	@Override
+	void putClient(Socket client, Thread thread) {
+		super.putClient(client, thread);
+
+		final CountDownLatch old = this.changeConfirmationLatches.put(client, new CountDownLatch(1));
+		if (old != null) {
+			throw new IllegalStateException("replacing change latch for client: " + client);
+		}
+	}
+
+	@Override
+	void disconnect(Socket client) {
+		try {
+			final Map<Socket, Thread> clients = this.getClients();
+			synchronized (clients) {
+				Objects.requireNonNull(clients.get(client)).join(3000);
+			}
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		}
+
+		super.disconnect(client);
 	}
 }

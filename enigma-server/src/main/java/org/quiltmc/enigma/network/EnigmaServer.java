@@ -30,7 +30,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 public abstract class EnigmaServer {
@@ -43,11 +43,12 @@ public abstract class EnigmaServer {
 	public static final Pattern USERNAME_REGEX = Pattern.compile("^[A-Za-z_][^(;:\"<>*+=\\\\|?,)]{2,31}$");
 
 	private final int port;
-	private ServerSocket socket;
-	private final List<Socket> clients = new CopyOnWriteArrayList<>();
+	@VisibleForTesting
+	ServerSocket socket;
+	private final Map<Socket, Thread> clients = new ConcurrentHashMap<>();
 	private final Map<Socket, String> usernames = new HashMap<>();
 	// Clients are only approved once they finish the login exchange by confirming the mapping sync
-	private final Set<Socket> unapprovedClients = new HashSet<>();
+	private final Set<Socket> unapprovedClients = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
 	private final byte[] jarChecksum;
 	private final char[] password;
@@ -89,9 +90,6 @@ public abstract class EnigmaServer {
 
 	private void acceptClient() throws IOException {
 		Socket client = this.socket.accept();
-		this.clients.add(client);
-		this.unapprovedClients.add(client);
-
 		Thread thread = new Thread(() -> {
 			try {
 				DataInput input = new DataInputStream(client.getInputStream());
@@ -122,17 +120,36 @@ public abstract class EnigmaServer {
 				return;
 			}
 
-			this.kick(client, "disconnect.disconnected");
+			this.disconnect(client);
 		});
 		thread.setName("Server I/O thread #" + (nextIoId++));
 		thread.setDaemon(true);
+
+		this.putClient(client, thread);
+
+		synchronized (this.unapprovedClients) {
+			this.unapprovedClients.add(client);
+		}
+
 		thread.start();
+	}
+
+	@VisibleForTesting
+	void putClient(Socket client, Thread thread) {
+		synchronized (this.clients) {
+			this.clients.put(client, thread);
+		}
+	}
+
+	@VisibleForTesting
+	void disconnect(Socket client) {
+		this.kick(client, "disconnect.disconnected");
 	}
 
 	public void stop() {
 		this.runOnThread(() -> {
 			if (this.socket != null && !this.socket.isClosed()) {
-				for (Socket client : this.clients) {
+				for (Socket client : this.clients.keySet()) {
 					this.kick(client, "disconnect.server_closed");
 				}
 
@@ -150,8 +167,10 @@ public abstract class EnigmaServer {
 	}
 
 	public void kick(Socket client, String reason, boolean notifyOthers) {
-		if (!this.clients.remove(client)) {
-			return;
+		synchronized (this.clients) {
+			if (this.clients.remove(client) == null) {
+				return;
+			}
 		}
 
 		this.sendPacket(client, new KickS2CPacket(reason));
@@ -206,7 +225,9 @@ public abstract class EnigmaServer {
 	}
 
 	public boolean isClientApproved(Socket client) {
-		return !this.unapprovedClients.contains(client);
+		synchronized (this.unapprovedClients) {
+			return !this.unapprovedClients.contains(client);
+		}
 	}
 
 	public void sendPacket(Socket client, Packet<ClientPacketHandler> packet) {
@@ -226,7 +247,7 @@ public abstract class EnigmaServer {
 	}
 
 	public void sendToAll(Packet<ClientPacketHandler> packet) {
-		for (Socket client : this.clients) {
+		for (Socket client : this.clients.keySet()) {
 			if (this.isClientApproved(client)) {
 				this.sendPacket(client, packet);
 			}
@@ -234,7 +255,7 @@ public abstract class EnigmaServer {
 	}
 
 	public void sendToAllExcept(Socket excluded, Packet<ClientPacketHandler> packet) {
-		for (Socket client : this.clients) {
+		for (Socket client : this.clients.keySet()) {
 			if (client != excluded && this.isClientApproved(client)) {
 				this.sendPacket(client, packet);
 			}
@@ -270,17 +291,21 @@ public abstract class EnigmaServer {
 
 		this.syncIds.put(entry, syncId);
 		this.inverseSyncIds.put(syncId, entry);
-		Set<Socket> clients = new HashSet<>(this.clients);
+		Set<Socket> clients = new HashSet<>(this.clients.keySet());
 		clients.remove(exception);
-		clients.removeAll(this.unapprovedClients);
+		synchronized (this.unapprovedClients) {
+			clients.removeAll(this.unapprovedClients);
+		}
 		this.clientsNeedingConfirmation.put(syncId, clients);
 		return syncId;
 	}
 
 	public void confirmChange(Socket client, int syncId) {
 		// If a client has a username, it has been approved
-		if (this.usernames.containsKey(client)) {
-			this.unapprovedClients.remove(client);
+		synchronized (this.unapprovedClients) {
+			if (this.usernames.containsKey(client)) {
+				this.unapprovedClients.remove(client);
+			}
 		}
 
 		Set<Socket> clients = this.clientsNeedingConfirmation.get(syncId);
@@ -333,12 +358,12 @@ public abstract class EnigmaServer {
 	}
 
 	@VisibleForTesting
-	List<Socket> getClients() {
+	Map<Socket, Thread> getClients() {
 		return this.clients;
 	}
 
 	@VisibleForTesting
-	public Set<Socket> getUnapprovedClients() {
+	Set<Socket> getUnapprovedClients() {
 		return this.unapprovedClients;
 	}
 
