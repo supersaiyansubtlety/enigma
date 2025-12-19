@@ -88,15 +88,17 @@ public class TestEnigmaServer extends EnigmaServer {
 
 	@Override
 	void disconnect(Socket client) {
-		try {
+		synchronized (this.getUnapprovedClients()) {
 			final Map<Socket, Thread> clients = this.getClients();
 			synchronized (clients) {
-				Objects.requireNonNull(clients.get(client)).join(3000);
+				try {
+					Objects.requireNonNull(clients.get(client)).join(100);
+				} catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
 			}
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		}
 
-		super.disconnect(client);
+			super.disconnect(client);
+		}
 	}
 }

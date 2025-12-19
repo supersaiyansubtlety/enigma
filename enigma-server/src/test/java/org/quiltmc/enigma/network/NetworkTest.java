@@ -19,7 +19,9 @@ import org.tinylog.Logger;
 
 import java.io.IOException;
 import java.net.ConnectException;
+import java.net.Socket;
 import java.nio.file.Path;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -58,13 +60,7 @@ public class NetworkTest {
 		return client;
 	}
 
-	/**
-	 * Repetitions after the 52nd consistently fail, at least on Windows.<br>
-	 * They throw a {@link ConnectException} with the message "Connection refused: connect".<br>
-	 * From what I (supersaiyansubtlety) can tell, this is because the server has an internal listener backlog
-	 * that fills up and refuses further connections.
-	 */
-	@RepeatedTest(52)
+	@RepeatedTest(100)
 	public void testLogin(RepetitionInfo repetitionInfo) throws IOException, InterruptedException {
 		final int repetition = repetitionInfo.getCurrentRepetition();
 		Logger.info("Starting repetition: " + repetition);
@@ -75,10 +71,10 @@ public class NetworkTest {
 		handler.client = client;
 
 		Assertions.assertFalse(server.getClients().isEmpty());
-		// final Set<Socket> unapprovedClients = server.getUnapprovedClients();
-		// synchronized (unapprovedClients) {
-		// 	Assertions.assertFalse(unapprovedClients.isEmpty());
-		// }
+		final Set<Socket> unapprovedClients = server.getUnapprovedClients();
+		synchronized (unapprovedClients) {
+			Assertions.assertFalse(unapprovedClients.isEmpty());
+		}
 
 		client.sendPacket(new LoginC2SPacket(checksum, PASSWORD.toCharArray(), "alice"));
 		Logger.info("waiting for change packet");
