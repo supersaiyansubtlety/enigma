@@ -92,7 +92,9 @@ public class TestEnigmaServer extends EnigmaServer {
 			final Map<Socket, Thread> clients = this.getClients();
 			synchronized (clients) {
 				try {
-					Objects.requireNonNull(clients.get(client)).join(100);
+					Objects
+						.requireNonNull(clients.get(client), () -> "no thread to join for client: " + client)
+						.join(100);
 				} catch (InterruptedException e) {
 					throw new RuntimeException(e);
 				}

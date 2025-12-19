@@ -18,9 +18,9 @@ import org.quiltmc.enigma.util.Utils;
 import org.tinylog.Logger;
 
 import java.io.IOException;
-import java.net.ConnectException;
 import java.net.Socket;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -70,16 +70,23 @@ public class NetworkTest {
 
 		handler.client = client;
 
-		Assertions.assertFalse(server.getClients().isEmpty());
 		final Set<Socket> unapprovedClients = server.getUnapprovedClients();
 		synchronized (unapprovedClients) {
 			Assertions.assertFalse(unapprovedClients.isEmpty());
 		}
 
+		final Map<Socket, Thread> clients = server.getClients();
+		synchronized (clients) {
+			Assertions.assertEquals(1, clients.size());
+		}
+
 		client.sendPacket(new LoginC2SPacket(checksum, PASSWORD.toCharArray(), "alice"));
 		Logger.info("waiting for change packet");
-		var confirmed = server.waitChangeConfirmation(server.getClients().keySet().iterator().next())
+		final boolean confirmed;
+		synchronized (clients) {
+			confirmed = server.waitChangeConfirmation(clients.keySet().iterator().next())
 				.await(3, TimeUnit.SECONDS);
+		}
 		Logger.info("done waiting for change packet");
 
 		Assertions.assertNotEquals(0, handler.disconnectFromServerLatch.getCount(), "The client was disconnected by the server");
