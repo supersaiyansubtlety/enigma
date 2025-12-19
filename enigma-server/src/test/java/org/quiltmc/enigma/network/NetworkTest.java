@@ -72,7 +72,7 @@ public class NetworkTest {
 
 		final Set<Socket> unapprovedClients = server.getUnapprovedClients();
 		synchronized (unapprovedClients) {
-			Assertions.assertFalse(unapprovedClients.isEmpty());
+			Assertions.assertEquals(1, unapprovedClients.size());
 		}
 
 		final Map<Socket, Thread> clients = server.getClients();

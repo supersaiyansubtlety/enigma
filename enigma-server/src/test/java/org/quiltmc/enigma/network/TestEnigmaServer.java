@@ -92,9 +92,11 @@ public class TestEnigmaServer extends EnigmaServer {
 			final Map<Socket, Thread> clients = this.getClients();
 			synchronized (clients) {
 				try {
+					// JANK: NetworkTest::testLogin repetitions after the second take time
+					// proportional to this join time
 					Objects
 						.requireNonNull(clients.get(client), () -> "no thread to join for client: " + client)
-						.join(100);
+						.join(50);
 				} catch (InterruptedException e) {
 					throw new RuntimeException(e);
 				}
