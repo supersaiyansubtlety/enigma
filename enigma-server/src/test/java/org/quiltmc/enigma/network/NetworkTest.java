@@ -65,26 +65,33 @@ public class NetworkTest {
 		final int repetition = repetitionInfo.getCurrentRepetition();
 		Logger.info("Starting repetition: " + repetition);
 
+		final Set<Socket> unapprovedClients = server.getUnapprovedClients();
+		final Map<Socket, Thread> clients = server.getClients();
+
+		final Socket oldClientSocket = clients.isEmpty() ? null : clients.keySet().iterator().next();
+
 		var handler = new DummyClientPacketHandler();
 		var client = connectClient(handler);
 
 		handler.client = client;
 
-		final Set<Socket> unapprovedClients = server.getUnapprovedClients();
 		synchronized (unapprovedClients) {
 			Assertions.assertEquals(1, unapprovedClients.size());
 		}
 
-		final Map<Socket, Thread> clients = server.getClients();
 		synchronized (clients) {
 			Assertions.assertEquals(1, clients.size());
 		}
 
 		client.sendPacket(new LoginC2SPacket(checksum, PASSWORD.toCharArray(), "alice"));
 		Logger.info("waiting for change packet");
+		final Socket clientSocket = clients.keySet().iterator().next();
+
+		Assertions.assertNotSame(oldClientSocket, clientSocket);
+
 		final boolean confirmed;
 		synchronized (clients) {
-			confirmed = server.waitChangeConfirmation(clients.keySet().iterator().next())
+			confirmed = server.waitChangeConfirmation(clientSocket)
 				.await(3, TimeUnit.SECONDS);
 		}
 		Logger.info("done waiting for change packet");
@@ -92,6 +99,20 @@ public class NetworkTest {
 		Assertions.assertNotEquals(0, handler.disconnectFromServerLatch.getCount(), "The client was disconnected by the server");
 		Assertions.assertTrue(confirmed, "Timed out waiting for the change confirmation");
 		client.disconnect();
+
+		// Logger.info("client count: " + clients.size());
+		// Logger.info("client itr hash: " + clients.keySet().iterator().next().hashCode());
+		// Logger.info("client socket hash: " + clientSocket.hashCode());
+		Assertions.assertSame(clientSocket, clients.keySet().iterator().next());
+
+		// TODO these don't work, but I've confirmed that clients does contain a different socket each repetition
+		// synchronized (unapprovedClients) {
+		// 	Assertions.assertEquals(0, unapprovedClients.size());
+		// }
+
+		// synchronized (clients) {
+		// 	Assertions.assertEquals(0, clients.size());
+		// }
 
 		Logger.info("Finished repetition: " + repetition);
 	}
