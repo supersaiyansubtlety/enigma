@@ -1,5 +1,6 @@
 package org.quiltmc.enigma.gui.search;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.quiltmc.enigma.util.Pair;
@@ -261,7 +262,8 @@ public class SearchUtil<T extends SearchEntry> {
 		 * @param input the input to split
 		 * @return the resulting components
 		 */
-		private static ImmutableList<String> wordwiseSplit(String input) {
+		@VisibleForTesting
+		static ImmutableList<String> wordwiseSplit(String input) {
 			ImmutableList.Builder<String> words = ImmutableList.builder();
 			while (!input.isEmpty()) {
 				final int take;
