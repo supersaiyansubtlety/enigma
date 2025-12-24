@@ -303,12 +303,7 @@ public class SearchUtil<T extends SearchEntry> {
 					}
 				} else if (Character.isDigit(input.charAt(from))) {
 					int nextNonNum = from + 1;
-					while (nextNonNum < input.length()) {
-						final char nextChar = input.charAt(nextNonNum);
-						if (!(Character.isLetter(nextChar) && !Character.isLowerCase(nextChar))) {
-							break;
-						}
-
+					while (nextNonNum < input.length() && Character.isDigit(input.charAt(nextNonNum))) {
 						nextNonNum++;
 					}
 
