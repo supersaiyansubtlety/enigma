@@ -1,5 +1,6 @@
 package org.quiltmc.enigma.gui.dialog;
 
+import com.google.common.collect.ImmutableList;
 import org.quiltmc.enigma.api.analysis.index.jar.EntryIndex;
 import org.quiltmc.enigma.api.translation.representation.entry.ClassEntry;
 import org.quiltmc.enigma.api.translation.representation.entry.Entry;
@@ -40,12 +41,12 @@ import java.awt.Font;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.MouseListener;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Stream;
 
 import static org.quiltmc.enigma.gui.util.GuiUtil.putKeyBindAction;
 
@@ -61,7 +62,7 @@ public class SearchDialog {
 
 	private final Gui gui;
 	private final SearchUtil<SearchEntryImpl> util;
-	private final List<Type> searchedTypes = new ArrayList<>();
+	private final Set<Type> searchedTypes = EnumSet.noneOf(Type.class);
 	private SearchUtil.SearchControl currentSearch;
 
 	public SearchDialog(Gui gui) {
@@ -194,7 +195,7 @@ public class SearchDialog {
 	}
 
 	private void clearCheckBoxes() {
-		for (Type type : Type.values()) {
+		for (Type type : Type.VALUES) {
 			this.getCheckBox(type).setSelected(false);
 		}
 	}
@@ -216,37 +217,24 @@ public class SearchDialog {
 		} else {
 			// if no types are provided, add all types to avoid showing an empty dialog
 			if (this.searchedTypes.isEmpty()) {
-				this.searchedTypes.addAll(Arrays.asList(Type.values()));
+				this.searchedTypes.addAll(Type.VALUES);
+			} else {
+				this.searchedTypes.addAll(List.of(types));
 			}
 		}
-
-		this.searchedTypes.addAll(Arrays.asList(types));
 
 		final EntryIndex entryIndex = this.gui.getController().getProject().getJarIndex().getIndex(EntryIndex.class);
 
-		for (Type searchedType : this.searchedTypes) {
-			this.getCheckBox(searchedType).setSelected(true);
-
-			switch (searchedType) {
-				case CLASS -> entryIndex.getClasses().parallelStream()
-						.filter(e -> !e.isInnerClass())
-						.map(e -> SearchEntryImpl.from(e, this.gui.getController()))
-						.map(SearchUtil.Entry::from)
-						.sequential()
-						.forEach(this.util::add);
-				case METHOD -> entryIndex.getMethods().parallelStream()
-						.filter(e -> !e.isConstructor() && !entryIndex.getMethodAccess(e).isSynthetic())
-						.map(e -> SearchEntryImpl.from(e, this.gui.getController()))
-						.map(SearchUtil.Entry::from)
-						.sequential()
-						.forEach(this.util::add);
-				case FIELD -> entryIndex.getFields().parallelStream()
-						.map(e -> SearchEntryImpl.from(e, this.gui.getController()))
-						.map(SearchUtil.Entry::from)
-						.sequential()
-						.forEach(this.util::add);
-			}
-		}
+		this.searchedTypes.parallelStream()
+				.peek(type -> this.getCheckBox(type).setSelected(true))
+				.flatMap(type -> type.parallelStream(entryIndex))
+				.map(parentedEntry -> SearchEntryImpl.from(parentedEntry, this.gui.getController()))
+				.map(SearchUtil.Entry::from)
+				.forEach(searchEntry -> {
+					synchronized (this.util) {
+						this.util.add(searchEntry);
+					}
+				});
 
 		this.updateList();
 
@@ -333,9 +321,9 @@ public class SearchDialog {
 		@Override
 		public List<String> getSearchableNames() {
 			if (this.deobf != null) {
-				return Arrays.asList(this.obf.getSimpleName(), this.deobf.getSimpleName());
+				return List.of(this.obf.getSimpleName(), this.deobf.getSimpleName());
 			} else {
-				return Collections.singletonList(this.obf.getSimpleName());
+				return List.of(this.obf.getSimpleName());
 			}
 		}
 
@@ -346,7 +334,7 @@ public class SearchDialog {
 
 		@Override
 		public int getTypePriority() {
-			return Type.values().length - Type.get(this.obf).ordinal();
+			return Type.VALUES.size() - Type.get(this.obf).ordinal();
 		}
 
 		@Override
@@ -354,9 +342,12 @@ public class SearchDialog {
 			return String.format("SearchEntryImpl { obf: %s, deobf: %s }", this.obf, this.deobf);
 		}
 
-		public static SearchEntryImpl from(ParentedEntry<?> e, GuiController controller) {
+		static SearchEntryImpl from(ParentedEntry<?> e, GuiController controller) {
 			ParentedEntry<?> deobf = controller.getProject().getRemapper().deobfuscate(e);
-			if (deobf.equals(e)) deobf = null;
+			if (deobf.equals(e)) {
+				deobf = null;
+			}
+
 			return new SearchEntryImpl(e, deobf);
 		}
 	}
@@ -407,9 +398,28 @@ public class SearchDialog {
 	 * Contains all searchable types. Ordered by priority in the search dialog (i.e. the first type here will show up above the second type, etc.).
 	 */
 	public enum Type {
-		CLASS,
-		METHOD,
-		FIELD;
+		CLASS {
+			@Override
+			Stream<? extends ParentedEntry<?>> parallelStream(EntryIndex index) {
+				return index.getClasses().parallelStream()
+					.filter(e -> !e.isInnerClass());
+			}
+		},
+		METHOD {
+			@Override
+			Stream<? extends ParentedEntry<?>> parallelStream(EntryIndex index) {
+				return index.getMethods().parallelStream()
+					.filter(e -> !e.isConstructor() && !index.getMethodAccess(e).isSynthetic());
+			}
+		},
+		FIELD {
+			@Override
+			Stream<? extends ParentedEntry<?>> parallelStream(EntryIndex index) {
+				return index.getFields().parallelStream();
+			}
+		};
+
+		public static final ImmutableList<Type> VALUES = ImmutableList.copyOf(values());
 
 		public static Type get(Entry<?> entry) {
 			if (entry instanceof ClassEntry) {
@@ -422,5 +432,7 @@ public class SearchDialog {
 				throw new IllegalArgumentException("Non-searchable entry type: " + entry);
 			}
 		}
+
+		abstract Stream<? extends ParentedEntry<?>> parallelStream(EntryIndex index);
 	}
 }
