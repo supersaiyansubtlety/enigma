@@ -251,14 +251,19 @@ public class SearchUtil<T extends SearchEntry> {
 		/**
 		 * Splits the given input into components, trying to detect word parts.
 		 *
-		 * <p>
-		 * Example of how words get split (using <code>|</code> as seperator):
-		 * <p><code>MinecraftClientGame -> Minecraft|Client|Game</code></p>
-		 * <p><code>HTTPInputStream -> HTTP|Input|Stream</code></p>
-		 * <p><code>class_932 -> class|_|932</code></p>
-		 * <p><code>X11FontManager -> X|11|Font|Manager</code></p>
-		 * <p><code>openHTTPConnection -> open|HTTP|Connection</code></p>
-		 * <p><code>open_http_connection -> open|_|http|_|connection</code></p>
+		 * <p> Example of how words get split:
+		 * <table>
+		 *     <tr><th>input</th><th>output</th></tr>
+		 *     <tr><td>{@code MinecraftClientGame}</td><td>{@code Minecraft}, {@code Client}, {@code Game}</td></tr>
+		 *     <tr><td>{@code HTTPInputStream}</td><td>{@code HTTP}, {@code Input}, {@code Stream}</td></tr>
+		 *     <tr><td>{@code class_932}</td><td>{@code class}, {@code _}, {@code 932}</td></tr>
+		 *     <tr><td>{@code X11FontManager}</td><td>{@code X}, {@code 11}, {@code Font}, {@code Manager}</td></tr>
+		 *     <tr><td>{@code openHTTPConnection}</td><td>{@code open}, {@code HTTP}, {@code Connection}</td></tr>
+		 *     <tr>
+		 *         <td>{@code open_http_connection}</td>
+		 *         <td>{@code open}, {@code _}, {@code http}, {@code _}, {@code connection}</td>
+		 *     </tr>
+		 * </table>
 		 *
 		 * @param input the input to split
 		 * @return the resulting components
@@ -276,29 +281,27 @@ public class SearchUtil<T extends SearchEntry> {
 						to = from + 1;
 					} else {
 						final int next = from + 1;
-						final boolean nextWordIsUppercase = Character.isUpperCase(input.charAt(from))
+						final boolean allCapsWord = Character.isUpperCase(input.charAt(from))
 								&& Character.isUpperCase(input.charAt(next));
-						if (nextWordIsUppercase) {
-							int nextLowercase = next;
-							while (Character.isUpperCase(input.charAt(nextLowercase))) {
-								nextLowercase++;
-								if (nextLowercase == inputLength) {
-									// don't leave the final capital letter as a single-character word,
-									// incorporate it into this word
-									nextLowercase++;
-									break;
-								}
+						if (allCapsWord) {
+							int afterUppers = next;
+							while (afterUppers < inputLength && Character.isUpperCase(input.charAt(afterUppers))) {
+								afterUppers++;
 							}
 
-							// -1: leave the last capital letter as the start of the next word
-							to = nextLowercase - 1;
+							if (afterUppers < inputLength && Character.isLowerCase(input.charAt(afterUppers))) {
+								// leave the last capital letter as the start of the next word
+								to = afterUppers - 1;
+							} else {
+								to = afterUppers;
+							}
 						} else {
-							int nextUppercase = next;
-							while (nextUppercase < inputLength && Character.isLowerCase(input.charAt(nextUppercase))) {
-								nextUppercase++;
+							int afterLowers = next;
+							while (afterLowers < inputLength && Character.isLowerCase(input.charAt(afterLowers))) {
+								afterLowers++;
 							}
 
-							to = nextUppercase;
+							to = afterLowers;
 						}
 					}
 				} else if (Character.isDigit(input.charAt(from))) {

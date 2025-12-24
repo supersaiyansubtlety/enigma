@@ -17,17 +17,27 @@ public class SearchUtilTest {
 
 	private static Stream<WordwiseExpectation> streamWordwiseExpectations() {
 		return Stream.of(
-			new WordwiseExpectation("UpperCamelCase", "Upper", "Camel", "Case"),
-			new WordwiseExpectation("lowerCamelCase", "lower", "Camel", "Case"),
-			new WordwiseExpectation("SCREAMUpperCamel", "SCREAM", "Upper", "Camel"),
-			new WordwiseExpectation("lowerSCREAMCamel", "lower", "SCREAM", "Camel"),
-			new WordwiseExpectation("lowerCamelSCREAM", "lower", "Camel", "SCREAM"),
-			new WordwiseExpectation("lower_snake_case", "lower", "_", "snake", "_", "case"),
-			new WordwiseExpectation("SCREAMING_SNAKE_CASE", "SCREAMING", "_", "SNAKE", "_", "CASE"),
-			new WordwiseExpectation("class_932", "class", "_", "932"),
-			new WordwiseExpectation("X11FontManager", "X", "11", "Font", "Manager")
+			WordwiseExpectation.of("single", "single"),
+			WordwiseExpectation.of("SINGLE", "SINGLE"),
+			WordwiseExpectation.of("UpperCamelCase", "Upper", "Camel", "Case"),
+			WordwiseExpectation.of("lowerCamelCase", "lower", "Camel", "Case"),
+			WordwiseExpectation.of("SCREAMUpperCamel", "SCREAM", "Upper", "Camel"),
+			WordwiseExpectation.of("lowerSCREAMCamel", "lower", "SCREAM", "Camel"),
+			WordwiseExpectation.of("lowerCamelSCREAM", "lower", "Camel", "SCREAM"),
+			WordwiseExpectation.of("lower_snake_case", "lower", "_", "snake", "_", "case"),
+			WordwiseExpectation.of("SCREAMING_SNAKE_CASE", "SCREAMING", "_", "SNAKE", "_", "CASE"),
+			WordwiseExpectation.of("class_932", "class", "_", "932"),
+			WordwiseExpectation.of("X11FontManager", "X", "11", "Font", "Manager")
 		);
 	}
 
-	record WordwiseExpectation(String input, String... output) { }
+	record WordwiseExpectation(String input, String... output) {
+		private static WordwiseExpectation of(String input, String... output) {
+			if (output.length < 1) {
+				throw new IllegalArgumentException("output must not be empty!");
+			}
+
+			return new WordwiseExpectation(input, output);
+		}
+	}
 }
