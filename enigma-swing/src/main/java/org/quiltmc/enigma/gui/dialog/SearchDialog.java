@@ -1,6 +1,7 @@
 package org.quiltmc.enigma.gui.dialog;
 
 import com.google.common.collect.ImmutableList;
+import org.jspecify.annotations.NonNull;
 import org.quiltmc.enigma.api.analysis.index.jar.EntryIndex;
 import org.quiltmc.enigma.api.translation.representation.entry.ClassEntry;
 import org.quiltmc.enigma.api.translation.representation.entry.Entry;
@@ -56,19 +57,19 @@ public class SearchDialog {
 	private final JCheckBox classesCheckBox;
 	private final JCheckBox methodsCheckBox;
 	private final JCheckBox fieldsCheckBox;
+
+	@NonNull
 	private DefaultListModel<SearchEntryImpl> classListModel;
 	private final JList<SearchEntryImpl> classList;
 	private final JDialog dialog;
-
 	private final Gui gui;
-	private final SearchUtil<SearchEntryImpl> util;
+
+	private final SearchUtil<SearchEntryImpl> util = new SearchUtil<>();
 	private final Set<Type> searchedTypes = EnumSet.noneOf(Type.class);
-	private SearchUtil.SearchControl currentSearch;
+	private SearchUtil.@NonNull SearchControl currentSearch = SearchUtil.SearchControl.Empty.INSTANCE;
 
 	public SearchDialog(Gui gui) {
 		this.gui = gui;
-
-		this.util = new SearchUtil<>();
 
 		this.dialog = new JDialog(gui.getFrame(), I18n.translate("menu.search"), true);
 		JPanel contentPane = new JPanel();
@@ -280,7 +281,7 @@ public class SearchDialog {
 
 	// Updates the list of class names
 	private void updateList() {
-		if (this.currentSearch != null) this.currentSearch.stop();
+		this.currentSearch.stop();
 
 		DefaultListModel<SearchEntryImpl> updatedClassListModel = new DefaultListModel<>();
 		this.classListModel = updatedClassListModel;

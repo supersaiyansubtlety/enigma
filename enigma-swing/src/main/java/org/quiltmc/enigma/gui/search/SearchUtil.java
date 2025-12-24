@@ -250,7 +250,7 @@ public class SearchUtil<T extends SearchEntry> {
 		private static String[] wordwiseSplit(String input) {
 			List<String> list = new ArrayList<>();
 			while (!input.isEmpty()) {
-				int take;
+				final int take;
 				if (Character.isLetter(input.charAt(0))) {
 					if (input.length() == 1) {
 						take = 1;
@@ -306,5 +306,24 @@ public class SearchUtil<T extends SearchEntry> {
 		boolean isFinished();
 
 		float getProgress();
+
+		final class Empty implements SearchControl {
+			public static final Empty INSTANCE = new Empty();
+
+			private Empty() { }
+
+			@Override
+			public void stop() { }
+
+			@Override
+			public boolean isFinished() {
+				return true;
+			}
+
+			@Override
+			public float getProgress() {
+				return 1;
+			}
+		}
 	}
 }
