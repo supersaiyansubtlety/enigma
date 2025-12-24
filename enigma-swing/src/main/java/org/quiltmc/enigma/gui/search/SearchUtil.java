@@ -1,8 +1,9 @@
 package org.quiltmc.enigma.gui.search;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import org.quiltmc.enigma.util.Pair;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -21,13 +22,21 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 public class SearchUtil<T extends SearchEntry> {
 	private final Map<T, Entry<T>> entries = new HashMap<>();
-	private final Map<String, Integer> hitCount = new HashMap<>();
+	/**
+	 * The number of times a {@link SearchEntry} has been {@link #hit(SearchEntry)}, mapped by the search entry's
+	 * {@linkplain SearchEntry#getIdentifier() identifier}.
+	 *
+	 * <p> More hits result in higher {@linkplain Entry#getScore(String, int) entry scores}.
+	 */
+	private final Map<String, Integer> hitsById = new HashMap<>();
 	private final Executor searchExecutor = Executors.newWorkStealingPool();
 
 	public void add(T entry) {
-		Entry<T> e = Entry.from(entry);
+		Entry<T> e = Entry.of(entry);
 		this.entries.put(entry, e);
 	}
 
@@ -36,7 +45,7 @@ public class SearchUtil<T extends SearchEntry> {
 	}
 
 	public void addAll(Collection<T> entries) {
-		this.entries.putAll(entries.parallelStream().collect(Collectors.toMap(e -> e, Entry::from)));
+		this.entries.putAll(entries.parallelStream().collect(Collectors.toMap(e -> e, Entry::of)));
 	}
 
 	public void remove(T entry) {
@@ -48,12 +57,12 @@ public class SearchUtil<T extends SearchEntry> {
 	}
 
 	public void clearHits() {
-		this.hitCount.clear();
+		this.hitsById.clear();
 	}
 
 	public Stream<T> search(String term) {
 		return this.entries.values().parallelStream()
-				.map(e -> new Pair<>(e, e.getScore(term, this.hitCount.getOrDefault(e.searchEntry.getIdentifier(), 0))))
+				.map(e -> new Pair<>(e, e.getScore(term, this.hitsById.getOrDefault(e.searchEntry.getIdentifier(), 0))))
 				.filter(e -> e.b() > 0)
 				.sorted(Comparator.comparingDouble(o -> -o.b()))
 				.map(e -> e.a().searchEntry)
@@ -61,7 +70,7 @@ public class SearchUtil<T extends SearchEntry> {
 	}
 
 	public SearchControl asyncSearch(String term, SearchResultConsumer<T> consumer, boolean onlyExactMatches) {
-		Map<String, Integer> hitCount = new HashMap<>(this.hitCount);
+		final ImmutableMap<String, Integer> hitsById = ImmutableMap.copyOf(this.hitsById);
 		Map<T, Entry<T>> entries = new HashMap<>(this.entries);
 		float[] scores = new float[entries.size()];
 		Lock scoresLock = new ReentrantLock();
@@ -81,7 +90,9 @@ public class SearchUtil<T extends SearchEntry> {
 						return;
 					}
 
-					float score = value.getScore(term, hitCount.getOrDefault(value.searchEntry.getIdentifier(), 0));
+					// non-null default -> getOrDefault returns non-null
+					@SuppressWarnings("DataFlowIssue")
+					float score = value.getScore(term, hitsById.getOrDefault(value.searchEntry.getIdentifier(), 0));
 					if (score <= 0) {
 						return;
 					}
@@ -131,17 +142,17 @@ public class SearchUtil<T extends SearchEntry> {
 
 	public void hit(T entry) {
 		if (this.entries.containsKey(entry)) {
-			this.hitCount.compute(entry.getIdentifier(), (id, i) -> i == null ? 1 : i + 1);
+			this.hitsById.compute(entry.getIdentifier(), (id, i) -> i == null ? 1 : i + 1);
 		}
 	}
 
 	public static final class Entry<T extends SearchEntry> {
 		public final T searchEntry;
-		private final String[][] components;
+		private final ImmutableList<ImmutableList<String>> searchableNameWords;
 
-		private Entry(T searchEntry, String[][] components) {
+		private Entry(T searchEntry, ImmutableList<ImmutableList<String>> searchableNameWords) {
 			this.searchEntry = searchEntry;
-			this.components = components;
+			this.searchableNameWords = searchableNameWords;
 		}
 
 		public float getScore(String term, int hits) {
@@ -152,8 +163,8 @@ public class SearchUtil<T extends SearchEntry> {
 			if (this.searchEntry.getSearchableNames().stream().anyMatch(name -> name.equalsIgnoreCase(term))) {
 				maxScore = Float.MAX_VALUE / 2;
 			} else {
-				maxScore = (float) Arrays.stream(this.components)
-						.mapToDouble(name -> getScoreFor(ucTerm, name))
+				maxScore = (float) this.searchableNameWords.stream()
+						.mapToDouble(nameWords -> getScoreFor(ucTerm, nameWords))
 						.max()
 						.orElse(0.0);
 			}
@@ -163,14 +174,15 @@ public class SearchUtil<T extends SearchEntry> {
 		}
 
 		/**
-		 * Computes the score for the given <code>name</code> against the given search term.
+		 * Computes the score for the given <code>nameWords</code> against the given search term.
 		 *
 		 * @param term the search term (expected to be upper-case)
-		 * @param name the entry name, split at word boundaries (see {@link Entry#wordwiseSplit(String)})
+		 * @param nameWords the entry name, split at word boundaries (see {@link Entry#wordwiseSplit(String)})
+		 *
 		 * @return the computed score for the entry
 		 */
-		private static float getScoreFor(String term, String[] name) {
-			int totalLength = Arrays.stream(name).mapToInt(String::length).sum();
+		private static float getScoreFor(String term, List<String> nameWords) {
+			int totalLength = nameWords.stream().mapToInt(String::length).sum();
 			float scorePerChar = 1f / totalLength;
 
 			// This map contains a snapshot of all the states the search has
@@ -184,9 +196,9 @@ public class SearchUtil<T extends SearchEntry> {
 			// for the next longest match, and calculate the new score for each
 			// match length until the maximum. Then the new scores are put back
 			// into the snapshot map.
-			for (int componentIndex = 0; componentIndex < name.length; componentIndex++) {
-				String component = name[componentIndex];
-				float posMultiplier = (name.length - componentIndex) * 0.3f;
+			for (int componentIndex = 0; componentIndex < nameWords.size(); componentIndex++) {
+				String component = nameWords.get(componentIndex);
+				float posMultiplier = (nameWords.size() - componentIndex) * 0.3f;
 				Map<String, Float> newSnapshots = new HashMap<>();
 				for (Map.Entry<String, Float> snapshot : snapshots.entrySet()) {
 					String remaining = snapshot.getKey();
@@ -216,11 +228,13 @@ public class SearchUtil<T extends SearchEntry> {
 			});
 		}
 
-		public static <T extends SearchEntry> Entry<T> from(T e) {
-			String[][] components = e.getSearchableNames().parallelStream()
+		public static <T extends SearchEntry> Entry<T> of(T e) {
+			return new Entry<>(e, e
+					.getSearchableNames()
+					.parallelStream()
 					.map(Entry::wordwiseSplit)
-					.toArray(String[][]::new);
-			return new Entry<>(e, components);
+					.collect(toImmutableList())
+			);
 		}
 
 		private static int compareEqualLength(String s1, String s2) {
@@ -247,8 +261,8 @@ public class SearchUtil<T extends SearchEntry> {
 		 * @param input the input to split
 		 * @return the resulting components
 		 */
-		private static String[] wordwiseSplit(String input) {
-			List<String> list = new ArrayList<>();
+		private static ImmutableList<String> wordwiseSplit(String input) {
+			ImmutableList.Builder<String> words = ImmutableList.builder();
 			while (!input.isEmpty()) {
 				final int take;
 				if (Character.isLetter(input.charAt(0))) {
@@ -287,11 +301,11 @@ public class SearchUtil<T extends SearchEntry> {
 					take = 1;
 				}
 
-				list.add(input.substring(0, take));
+				words.add(input.substring(0, take));
 				input = input.substring(take);
 			}
 
-			return list.toArray(new String[0]);
+			return words.build();
 		}
 	}
 

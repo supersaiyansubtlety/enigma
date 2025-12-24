@@ -230,7 +230,7 @@ public class SearchDialog {
 				.peek(type -> this.getCheckBox(type).setSelected(true))
 				.flatMap(type -> type.parallelStream(entryIndex))
 				.map(parentedEntry -> SearchEntryImpl.from(parentedEntry, this.gui.getController()))
-				.map(SearchUtil.Entry::from)
+				.map(SearchUtil.Entry::of)
 				.forEach(searchEntry -> {
 					synchronized (this.util) {
 						this.util.add(searchEntry);
