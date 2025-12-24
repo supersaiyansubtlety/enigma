@@ -17,12 +17,15 @@ public class SearchUtilTest {
 
 	private static Stream<WordwiseExpectation> streamWordwiseExpectations() {
 		return Stream.of(
-			new WordwiseExpectation("MinecraftClientGame", "Minecraft", "Client", "Game"),
-			new WordwiseExpectation("HTTPInputStream", "HTTP", "Input", "Stream"),
+			new WordwiseExpectation("UpperCamelCase", "Upper", "Camel", "Case"),
+			new WordwiseExpectation("lowerCamelCase", "lower", "Camel", "Case"),
+			new WordwiseExpectation("SCREAMUpperCamel", "SCREAM", "Upper", "Camel"),
+			new WordwiseExpectation("lowerSCREAMCamel", "lower", "SCREAM", "Camel"),
+			new WordwiseExpectation("lowerCamelSCREAM", "lower", "Camel", "SCREAM"),
+			new WordwiseExpectation("lower_snake_case", "lower", "_", "snake", "_", "case"),
+			new WordwiseExpectation("SCREAMING_SNAKE_CASE", "SCREAMING", "_", "SNAKE", "_", "CASE"),
 			new WordwiseExpectation("class_932", "class", "_", "932"),
-			new WordwiseExpectation("X11FontManager", "X", "11", "Font", "Manager"),
-			new WordwiseExpectation("openHTTPConnection", "open", "HTTP", "Connection"),
-			new WordwiseExpectation("open_http_connection", "open", "_", "http", "_", "connection")
+			new WordwiseExpectation("X11FontManager", "X", "11", "Font", "Manager")
 		);
 	}
 
