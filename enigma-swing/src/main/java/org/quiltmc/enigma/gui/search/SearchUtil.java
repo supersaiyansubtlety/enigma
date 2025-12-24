@@ -247,6 +247,7 @@ public class SearchUtil<T extends SearchEntry> {
 			return len;
 		}
 
+		// TODO replace some Character::isLowerCase/isUpperCase with their inverted opposites
 		/**
 		 * Splits the given input into components, trying to detect word parts.
 		 *
@@ -264,47 +265,60 @@ public class SearchUtil<T extends SearchEntry> {
 		 */
 		@VisibleForTesting
 		static ImmutableList<String> wordwiseSplit(String input) {
-			ImmutableList.Builder<String> words = ImmutableList.builder();
-			while (!input.isEmpty()) {
-				final int take;
-				if (Character.isLetter(input.charAt(0))) {
-					if (input.length() == 1) {
-						take = 1;
+			final ImmutableList.Builder<String> words = ImmutableList.builder();
+			final int inputLength = input.length();
+
+			int from = 0;
+			while (from < inputLength) {
+				final int to;
+				if (Character.isLetter(input.charAt(from))) {
+					if (inputLength - from == 1) {
+						to = from + 1;
 					} else {
-						boolean nextSegmentIsUppercase = Character.isUpperCase(input.charAt(0)) && Character.isUpperCase(input.charAt(1));
-						if (nextSegmentIsUppercase) {
-							int nextLowercase = 1;
+						final int next = from + 1;
+						final boolean nextWordIsUppercase = Character.isUpperCase(input.charAt(from))
+								&& Character.isUpperCase(input.charAt(next));
+						if (nextWordIsUppercase) {
+							int nextLowercase = next;
 							while (Character.isUpperCase(input.charAt(nextLowercase))) {
-								nextLowercase += 1;
-								if (nextLowercase == input.length()) {
-									nextLowercase += 1;
+								nextLowercase++;
+								if (nextLowercase == inputLength) {
+									// don't leave the final capital letter as a single-character word,
+									// incorporate it into this word
+									nextLowercase++;
 									break;
 								}
 							}
 
-							take = nextLowercase - 1;
+							// -1: leave the last capital letter as the start of the next word
+							to = nextLowercase - 1;
 						} else {
-							int nextUppercase = 1;
-							while (nextUppercase < input.length() && Character.isLowerCase(input.charAt(nextUppercase))) {
-								nextUppercase += 1;
+							int nextUppercase = next;
+							while (nextUppercase < inputLength && Character.isLowerCase(input.charAt(nextUppercase))) {
+								nextUppercase++;
 							}
 
-							take = nextUppercase;
+							to = nextUppercase;
 						}
 					}
-				} else if (Character.isDigit(input.charAt(0))) {
-					int nextNonNum = 1;
-					while (nextNonNum < input.length() && Character.isLetter(input.charAt(nextNonNum)) && !Character.isLowerCase(input.charAt(nextNonNum))) {
-						nextNonNum += 1;
+				} else if (Character.isDigit(input.charAt(from))) {
+					int nextNonNum = from + 1;
+					while (nextNonNum < input.length()) {
+						final char nextChar = input.charAt(nextNonNum);
+						if (!(Character.isLetter(nextChar) && !Character.isLowerCase(nextChar))) {
+							break;
+						}
+
+						nextNonNum++;
 					}
 
-					take = nextNonNum;
+					to = nextNonNum;
 				} else {
-					take = 1;
+					to = from + 1;
 				}
 
-				words.add(input.substring(0, take));
-				input = input.substring(take);
+				words.add(input.substring(from, to));
+				from = to;
 			}
 
 			return words.build();
