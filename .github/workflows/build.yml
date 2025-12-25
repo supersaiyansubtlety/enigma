@@ -6,6 +6,9 @@ jobs:
       matrix:
         java: [17-jdk, 20-jdk]
     runs-on: ubuntu-22.04
+    concurrency:
+      group: network_test
+      cancel-in-progress: false
     container:
       image: eclipse-temurin:${{ matrix.java }}
       options: --user root
