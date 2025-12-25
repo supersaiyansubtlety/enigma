@@ -4,6 +4,7 @@ jobs:
   build:
     strategy:
       matrix:
+        max-parallel: 1
         java: [17-jdk, 20-jdk]
     runs-on: ubuntu-22.04
     container:
