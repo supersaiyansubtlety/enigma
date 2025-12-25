@@ -4,6 +4,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.quiltmc.enigma.util.Pair;
+import org.quiltmc.enigma.util.Utils;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -24,6 +25,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static java.lang.Character.isDigit;
+import static java.lang.Character.isLetter;
+import static java.lang.Character.isLowerCase;
+import static java.lang.Character.isUpperCase;
 
 public class SearchUtil<T extends SearchEntry> {
 	private final Map<T, Entry<T>> entries = new HashMap<>();
@@ -193,22 +198,21 @@ public class SearchUtil<T extends SearchEntry> {
 			Map<String, Float> snapshots = new HashMap<>();
 			snapshots.put(term, 0f);
 
-			// For each component, start at each existing snapshot, searching
+			// For each word, start at each existing snapshot, searching
 			// for the next longest match, and calculate the new score for each
 			// match length until the maximum. Then the new scores are put back
 			// into the snapshot map.
-			for (int componentIndex = 0; componentIndex < nameWords.size(); componentIndex++) {
-				String component = nameWords.get(componentIndex);
-				float posMultiplier = (nameWords.size() - componentIndex) * 0.3f;
-				Map<String, Float> newSnapshots = new HashMap<>();
-				for (Map.Entry<String, Float> snapshot : snapshots.entrySet()) {
-					String remaining = snapshot.getKey();
-					float score = snapshot.getValue();
-					component = component.toUpperCase(Locale.ROOT);
-					int l = compareEqualLength(remaining, component);
-					for (int i = 1; i <= l; i++) {
-						float baseScore = scorePerChar * i;
-						float chainBonus = (i - 1) * 0.5f;
+			for (int iWord = 0; iWord < nameWords.size(); iWord++) {
+				final String word = nameWords.get(iWord).toUpperCase(Locale.ROOT);
+				final float posMultiplier = (nameWords.size() - iWord) * 0.3f;
+				final Map<String, Float> newSnapshots = new HashMap<>();
+				for (final Map.Entry<String, Float> snapshot : snapshots.entrySet()) {
+					final String remaining = snapshot.getKey();
+					final float score = snapshot.getValue();
+					final int commonPrefixLength = Utils.getCommonPrefixLength(remaining, word);
+					for (int i = 1; i <= commonPrefixLength; i++) {
+						final float baseScore = scorePerChar * i;
+						final float chainBonus = (i - 1) * 0.5f;
 						merge(newSnapshots, Collections.singletonMap(remaining.substring(i), score + baseScore * posMultiplier + chainBonus), Math::max);
 					}
 				}
@@ -216,15 +220,14 @@ public class SearchUtil<T extends SearchEntry> {
 				merge(snapshots, newSnapshots, Math::max);
 			}
 
-			// Only return the score for when the search term was completely
-			// consumed.
+			// Only return the score for when the search term was completely consumed.
 			return snapshots.getOrDefault("", 0f);
 		}
 
-		private static <K, V> void merge(Map<K, V> self, Map<K, V> source, BiFunction<V, V, V> combiner) {
+		private static <K, V> void merge(Map<K, V> target, Map<K, V> source, BiFunction<V, V, V> combiner) {
 			source.forEach((k, v) -> {
 				if (v != null) {
-					self.merge(k, v, combiner);
+					target.merge(k, v, combiner);
 				}
 			});
 		}
@@ -238,16 +241,6 @@ public class SearchUtil<T extends SearchEntry> {
 			);
 		}
 
-		private static int compareEqualLength(String s1, String s2) {
-			int len = 0;
-			while (len < s1.length() && len < s2.length() && s1.charAt(len) == s2.charAt(len)) {
-				len += 1;
-			}
-
-			return len;
-		}
-
-		// TODO replace some Character::isLowerCase/isUpperCase with their inverted opposites
 		/**
 		 * Splits the given input into components, trying to detect word parts.
 		 *
@@ -276,20 +269,19 @@ public class SearchUtil<T extends SearchEntry> {
 			int from = 0;
 			while (from < inputLength) {
 				final int to;
-				if (Character.isLetter(input.charAt(from))) {
+				if (isLetter(input.charAt(from))) {
 					if (inputLength - from == 1) {
 						to = from + 1;
 					} else {
 						final int next = from + 1;
-						final boolean allCapsWord = Character.isUpperCase(input.charAt(from))
-								&& Character.isUpperCase(input.charAt(next));
+						final boolean allCapsWord = isUpperCase(input.charAt(from)) && isUpperCase(input.charAt(next));
 						if (allCapsWord) {
-							int afterUppers = next;
-							while (afterUppers < inputLength && Character.isUpperCase(input.charAt(afterUppers))) {
+							int afterUppers = next + 1;
+							while (afterUppers < inputLength && isUpperCase(input.charAt(afterUppers))) {
 								afterUppers++;
 							}
 
-							if (afterUppers < inputLength && Character.isLowerCase(input.charAt(afterUppers))) {
+							if (afterUppers < inputLength && isLowerCase(input.charAt(afterUppers))) {
 								// leave the last capital letter as the start of the next word
 								to = afterUppers - 1;
 							} else {
@@ -297,16 +289,16 @@ public class SearchUtil<T extends SearchEntry> {
 							}
 						} else {
 							int afterLowers = next;
-							while (afterLowers < inputLength && Character.isLowerCase(input.charAt(afterLowers))) {
+							while (afterLowers < inputLength && isLowerCase(input.charAt(afterLowers))) {
 								afterLowers++;
 							}
 
 							to = afterLowers;
 						}
 					}
-				} else if (Character.isDigit(input.charAt(from))) {
+				} else if (isDigit(input.charAt(from))) {
 					int nextNonNum = from + 1;
-					while (nextNonNum < input.length() && Character.isDigit(input.charAt(nextNonNum))) {
+					while (nextNonNum < input.length() && isDigit(input.charAt(nextNonNum))) {
 						nextNonNum++;
 					}
 

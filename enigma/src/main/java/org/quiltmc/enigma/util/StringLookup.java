@@ -41,18 +41,6 @@ import static com.google.common.collect.ImmutableSet.toImmutableSet;
 public final class StringLookup<R extends StringLookup.Result> {
 	private static final int NON_PREFIX_START = 1;
 
-	private static int getCommonPrefixLength(String left, String right) {
-		final int minLength = Math.min(left.length(), right.length());
-
-		for (int i = 0; i < minLength; i++) {
-			if (left.charAt(i) != right.charAt(i)) {
-				return i;
-			}
-		}
-
-		return minLength;
-	}
-
 	/**
 	 * @param <R> the type of results
 	 *
@@ -161,7 +149,6 @@ public final class StringLookup<R extends StringLookup.Result> {
 		this.resultsBySubstring = resultsBySubstring;
 	}
 
-	// TODO implement lookUpIgnoreCase
 	/**
 	 * @return results for the passed {@code term}; an empty {@code term} yields empty results
 	 *
@@ -330,7 +317,7 @@ public final class StringLookup<R extends StringLookup.Result> {
 				final ResultCache fresh = this.createFresh(term);
 				return fresh.new Update(!fresh.results.areEmpty());
 			} else {
-				final int commonPrefixLength = getCommonPrefixLength(this.term, term);
+				final int commonPrefixLength = Utils.getCommonPrefixLength(this.term, term);
 				final int termLength = term.length();
 				final int cachedTermLength = this.term.length();
 

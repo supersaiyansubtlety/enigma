@@ -153,7 +153,7 @@ public class Utils {
 	}
 
 	public static String andJoin(boolean oxfordComma, List<String> words) {
-		return naturalJoin(" and ", oxfordComma, words);
+		return naturalJoin("and", oxfordComma, words);
 	}
 
 	/**
@@ -168,7 +168,7 @@ public class Utils {
 		return switch (count) {
 			case 0 -> "";
 			case 1 -> words.get(0);
-			case 2 -> words.get(0) + finalSeparator + words.get(1);
+			case 2 -> words.get(0) + ' ' + finalSeparator + ' ' + words.get(1);
 			default -> {
 				final StringBuilder joined = new StringBuilder(words.get(0));
 				final int lastIndex = count - 1;
@@ -177,14 +177,26 @@ public class Utils {
 				}
 
 				if (oxfordComma) {
-					joined.append(",");
+					joined.append(", ");
 				}
 
-				joined.append(finalSeparator).append(words.get(lastIndex));
+				joined.append(finalSeparator).append(' ').append(words.get(lastIndex));
 
 				yield joined.toString();
 			}
 		};
+	}
+
+	public static int getCommonPrefixLength(String left, String right) {
+		final int minLength = Math.min(left.length(), right.length());
+
+		for (int i = 0; i < minLength; i++) {
+			if (left.charAt(i) != right.charAt(i)) {
+				return i;
+			}
+		}
+
+		return minLength;
 	}
 
 	public static int clamp(long value, int min, int max) {
