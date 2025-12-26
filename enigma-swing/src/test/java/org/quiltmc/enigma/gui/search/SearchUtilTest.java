@@ -6,13 +6,13 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.arrayContaining;
 
 public class SearchUtilTest {
 	@ParameterizedTest
 	@MethodSource("streamWordwiseExpectations")
 	void testWordwiseSplit(WordwiseExpectation expectation) {
-		assertThat(SearchUtil.Entry.wordwiseSplit(expectation.input), contains(expectation.output));
+		assertThat(SearchUtil.Entry.WORD_END.split(expectation.input), arrayContaining(expectation.output));
 	}
 
 	private static Stream<WordwiseExpectation> streamWordwiseExpectations() {
@@ -35,6 +35,10 @@ public class SearchUtilTest {
 		private static WordwiseExpectation of(String input, String... output) {
 			if (output.length < 1) {
 				throw new IllegalArgumentException("output must not be empty!");
+			}
+
+			if (!String.join("", output).equals(input)) {
+				throw new IllegalArgumentException("output must be concatenation of input!");
 			}
 
 			return new WordwiseExpectation(input, output);

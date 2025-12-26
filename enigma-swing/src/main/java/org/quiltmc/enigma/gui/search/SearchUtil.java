@@ -4,6 +4,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.quiltmc.enigma.util.Pair;
+import org.quiltmc.enigma.util.Regex;
 import org.quiltmc.enigma.util.Utils;
 
 import java.util.Arrays;
@@ -21,16 +22,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiFunction;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static java.lang.Character.isDigit;
-import static java.lang.Character.isLetter;
-import static java.lang.Character.isLowerCase;
-import static java.lang.Character.isUpperCase;
+import static org.quiltmc.enigma.util.Regex.OR;
+import static org.quiltmc.enigma.util.Regex.lookAhead;
+import static org.quiltmc.enigma.util.Regex.lookBehind;
+import static org.quiltmc.enigma.util.Regex.negativeLookBehind;
 
-public class SearchUtil<T extends SearchEntry> {
+public class SearchUtil<T extends SearchEntry> implements Regex.Constructs, Regex.Expressions {
 	private final Map<T, Entry<T>> entries = new HashMap<>();
 	/**
 	 * The number of times a {@link SearchEntry} has been {@link #hit(SearchEntry)}, mapped by the search entry's
@@ -153,6 +155,42 @@ public class SearchUtil<T extends SearchEntry> {
 	}
 
 	public static final class Entry<T extends SearchEntry> {
+		/**
+		 * Matches the ends of words; used for {@linkplain Pattern#split(CharSequence) splitting}.
+		 *
+		 * <p> All matches are 0-length, so the concatenation of split words yields the un-split input.
+		 *
+		 * <p> Splitting examples:
+		 * <table>
+		 *     <tr><th>input</th><th>output</th></tr>
+		 *     <tr><td>{@code MinecraftClientGame}</td><td>{@code Minecraft}, {@code Client}, {@code Game}</td></tr>
+		 *     <tr><td>{@code HTTPInputStream}</td><td>{@code HTTP}, {@code Input}, {@code Stream}</td></tr>
+		 *     <tr><td>{@code class_932}</td><td>{@code class}, {@code _}, {@code 932}</td></tr>
+		 *     <tr><td>{@code X11FontManager}</td><td>{@code X}, {@code 11}, {@code Font}, {@code Manager}</td></tr>
+		 *     <tr><td>{@code openHTTPConnection}</td><td>{@code open}, {@code HTTP}, {@code Connection}</td></tr>
+		 *     <tr>
+		 *         <td>{@code open_http_connection}</td>
+		 *         <td>{@code open}, {@code _}, {@code http}, {@code _}, {@code connection}</td>
+		 *     </tr>
+		 * </table>
+		 */
+		@VisibleForTesting
+		static final Pattern WORD_END = Pattern.compile(String.join(
+				OR,
+				// after letters
+				lookBehind(LETTER) + lookAhead(NON_LETTER),
+				// after non-letters
+				lookBehind(NON_LETTER) + lookAhead(LETTER),
+				// before uppercase to lowercase; leave last uppercase as start of next word
+				lookAhead(UPPERCASE + LOWERCASE),
+				// after lowercase to uppercase
+				lookBehind(LOWERCASE) + lookAhead(UPPERCASE),
+				// after digits
+				lookBehind(DIGIT) + lookAhead(NON_DIGIT),
+				// after any non-letter, non-digit character
+				negativeLookBehind("[" + LETTER + DIGIT + "]")
+		));
+
 		public final T searchEntry;
 		private final ImmutableList<ImmutableList<String>> searchableNameWords;
 
@@ -183,7 +221,7 @@ public class SearchUtil<T extends SearchEntry> {
 		 * Computes the score for the given <code>nameWords</code> against the given search term.
 		 *
 		 * @param term the search term (expected to be upper-case)
-		 * @param nameWords the entry name, split at word boundaries (see {@link Entry#wordwiseSplit(String)})
+		 * @param nameWords the entry name, split at word boundaries (see {@link Entry#WORD_END})
 		 *
 		 * @return the computed score for the entry
 		 */
@@ -236,82 +274,10 @@ public class SearchUtil<T extends SearchEntry> {
 			return new Entry<>(e, e
 					.getSearchableNames()
 					.parallelStream()
-					.map(Entry::wordwiseSplit)
+					.map(WORD_END::split)
+					.map(ImmutableList::copyOf)
 					.collect(toImmutableList())
 			);
-		}
-
-		/**
-		 * Splits the given input into components, trying to detect word parts.
-		 *
-		 * <p> Example of how words get split:
-		 * <table>
-		 *     <tr><th>input</th><th>output</th></tr>
-		 *     <tr><td>{@code MinecraftClientGame}</td><td>{@code Minecraft}, {@code Client}, {@code Game}</td></tr>
-		 *     <tr><td>{@code HTTPInputStream}</td><td>{@code HTTP}, {@code Input}, {@code Stream}</td></tr>
-		 *     <tr><td>{@code class_932}</td><td>{@code class}, {@code _}, {@code 932}</td></tr>
-		 *     <tr><td>{@code X11FontManager}</td><td>{@code X}, {@code 11}, {@code Font}, {@code Manager}</td></tr>
-		 *     <tr><td>{@code openHTTPConnection}</td><td>{@code open}, {@code HTTP}, {@code Connection}</td></tr>
-		 *     <tr>
-		 *         <td>{@code open_http_connection}</td>
-		 *         <td>{@code open}, {@code _}, {@code http}, {@code _}, {@code connection}</td>
-		 *     </tr>
-		 * </table>
-		 *
-		 * @param input the input to split
-		 * @return the resulting components
-		 */
-		@VisibleForTesting
-		static ImmutableList<String> wordwiseSplit(String input) {
-			final ImmutableList.Builder<String> words = ImmutableList.builder();
-			final int inputLength = input.length();
-
-			int from = 0;
-			while (from < inputLength) {
-				final int to;
-				if (isLetter(input.charAt(from))) {
-					if (inputLength - from == 1) {
-						to = from + 1;
-					} else {
-						final int next = from + 1;
-						final boolean allCapsWord = isUpperCase(input.charAt(from)) && isUpperCase(input.charAt(next));
-						if (allCapsWord) {
-							int afterUppers = next + 1;
-							while (afterUppers < inputLength && isUpperCase(input.charAt(afterUppers))) {
-								afterUppers++;
-							}
-
-							if (afterUppers < inputLength && isLowerCase(input.charAt(afterUppers))) {
-								// leave the last capital letter as the start of the next word
-								to = afterUppers - 1;
-							} else {
-								to = afterUppers;
-							}
-						} else {
-							int afterLowers = next;
-							while (afterLowers < inputLength && isLowerCase(input.charAt(afterLowers))) {
-								afterLowers++;
-							}
-
-							to = afterLowers;
-						}
-					}
-				} else if (isDigit(input.charAt(from))) {
-					int nextNonNum = from + 1;
-					while (nextNonNum < input.length() && isDigit(input.charAt(nextNonNum))) {
-						nextNonNum++;
-					}
-
-					to = nextNonNum;
-				} else {
-					to = from + 1;
-				}
-
-				words.add(input.substring(from, to));
-				from = to;
-			}
-
-			return words.build();
 		}
 	}
 
