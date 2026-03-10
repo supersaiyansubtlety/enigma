@@ -1,7 +1,7 @@
 package org.quiltmc.enigma.gui.element;
 
 import org.jspecify.annotations.Nullable;
-import org.quiltmc.enigma.util.Utils;
+import org.quiltmc.enigma.util.CollectionUtils;
 
 import javax.swing.JTextField;
 import javax.swing.text.Document;
@@ -79,7 +79,7 @@ public class PlaceheldTextField extends JTextField {
 			final Graphics localGraphics = graphics.create();
 			trySetRenderingHints(localGraphics);
 
-			Utils.findFirstNonNull(this.placeholderColor, this.getDisabledTextColor(), this.getForeground())
+			CollectionUtils.findFirstNonNull(this.placeholderColor, this.getDisabledTextColor(), this.getForeground())
 					.ifPresent(localGraphics::setColor);
 			localGraphics.setFont(this.getFont());
 

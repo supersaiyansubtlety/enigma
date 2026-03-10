@@ -104,7 +104,7 @@ public final class StringLookup<R extends StringLookup.Result> {
 		// Use identity equality semantics so substrings can point to multiple results with the same target.
 		// Duplicates must be present here because returned results may not match String::contains.
 		final CompositeStringMultiTrie<ResultWrapper<R>> substringBuilder =
-				CompositeStringMultiTrie.createHashedBranching(Utils::createIdentityHashSet);
+				CompositeStringMultiTrie.createHashedBranching(CollectionUtils::createIdentityHashSet);
 
 		results.forEach(result -> {
 			final String string = result.lookupString();

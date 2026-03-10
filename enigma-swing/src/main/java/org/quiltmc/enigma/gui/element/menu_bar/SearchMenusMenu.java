@@ -53,7 +53,7 @@ import static org.quiltmc.enigma.gui.util.GuiUtil.EMPTY_MENU_ELEMENTS;
 import static org.quiltmc.enigma.gui.util.GuiUtil.getCenteredFontBaseY;
 import static org.quiltmc.enigma.gui.util.GuiUtil.trySetRenderingHints;
 import static org.quiltmc.enigma.util.StringLookup.toStringLookup;
-import static org.quiltmc.enigma.util.Utils.getLastOrNull;
+import static org.quiltmc.enigma.util.CollectionUtils.getLastOrNull;
 import static javax.swing.BorderFactory.createEmptyBorder;
 
 public class SearchMenusMenu extends AbstractEnigmaMenu {

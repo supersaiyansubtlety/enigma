@@ -51,36 +51,12 @@ public class CombinedCollection<T> implements Collection<T> {
 
 	@Override
 	public Object @NonNull[] toArray() {
-		final int size = this.size();
-		final Object[] array = new Object[size];
-		final Iterator<T> itr = this.iterator();
-		int i = 0;
-		while (itr.hasNext()) {
-			array[i++] = itr.next();
-		}
-
-		return array;
+		return CollectionUtils.toArrayImpl(this);
 	}
 
-	// Based on HashMap::prepareArray and HashMap::keysToArray
-	@SuppressWarnings("unchecked")
 	@Override
-	public <T1> T1 @NonNull[] toArray(T1[] a) {
-		final int size = this.size();
-		if (a.length < size) {
-			a = (T1[]) java.lang.reflect.Array
-				.newInstance(a.getClass().getComponentType(), size);
-		} else if (a.length > size) {
-			a[size] = null;
-		}
-
-		final Iterator<T> itr = this.iterator();
-		final Object[] objects = a;
-		for (int i = 0; i < size; i++) {
-			objects[i] = itr.next();
-		}
-
-		return a;
+	public <T1> T1 @NonNull[] toArray(T1 @NonNull[] a) {
+		return CollectionUtils.toArrayImpl(this, a);
 	}
 
 	@Override
