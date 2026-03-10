@@ -20,8 +20,8 @@ public class SortedCollectionTest {
 
 	private static SortedCollection<Integer> createSortedInts() {
 		return new SortedCollection<>(
-			Integer::compare,
-			o -> o instanceof Integer integer ? integer : null
+				Integer::compare,
+				o -> o instanceof Integer integer ? integer : null
 		);
 	}
 
@@ -32,9 +32,9 @@ public class SortedCollectionTest {
 		for (int i = 0; i < VALUES.size(); i++) {
 			sorted.add(VALUES.get(i));
 			final Integer[] expectation = VALUES.subList(0, i + 1)
-				.stream()
-				.sorted()
-				.toArray(Integer[]::new);
+					.stream()
+					.sorted()
+					.toArray(Integer[]::new);
 
 			assertThat(sorted, Matchers.contains(expectation));
 		}
@@ -51,12 +51,13 @@ public class SortedCollectionTest {
 			sorted.add(new InsertedValue(VALUES.get(i), i));
 
 			@SuppressWarnings("DataFlowIssue")
-			final InsertedValue[] expectation = Streams.mapWithIndex(
-					VALUES.subList(0, i + 1).stream(),
-					(value, index) -> new InsertedValue(value, (int) index)
-				)
-				.sorted(InsertedValue.EXPECTATION_COMPARATOR)
-				.toArray(InsertedValue[]::new);
+			final InsertedValue[] expectation = Streams
+					.mapWithIndex(
+						VALUES.subList(0, i + 1).stream(),
+						(value, index) -> new InsertedValue(value, (int) index)
+					)
+					.sorted(InsertedValue.EXPECTATION_COMPARATOR)
+					.toArray(InsertedValue[]::new);
 
 			assertThat(sorted, Matchers.contains(expectation));
 		}
@@ -93,7 +94,7 @@ public class SortedCollectionTest {
 	private record InsertedValue(int value, int inserted) {
 		static final Comparator<InsertedValue> VALUE_COMPARATOR = Comparator.comparingInt(InsertedValue::value);
 		static final Comparator<InsertedValue> EXPECTATION_COMPARATOR = VALUE_COMPARATOR
-			.thenComparingInt(InsertedValue::inserted);
+				.thenComparingInt(InsertedValue::inserted);
 
 		@Nullable
 		static InsertedValue castOrNull(Object o) {
