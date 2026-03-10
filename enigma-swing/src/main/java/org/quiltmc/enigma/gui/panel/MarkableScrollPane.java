@@ -4,12 +4,10 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
-import com.google.common.collect.Multiset;
-import com.google.common.collect.TreeMultiset;
-import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.quiltmc.enigma.gui.util.GuiUtil;
 import org.quiltmc.enigma.gui.util.ScaleUtil;
+import org.quiltmc.enigma.util.SortedCollection;
 
 import java.awt.Color;
 import java.awt.Component;
@@ -22,6 +20,7 @@ import java.awt.event.ComponentListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -55,7 +54,10 @@ public class MarkableScrollPane extends SmartScrollPane {
 	private static final int DEFAULT_MARKER_WIDTH = 10;
 	private static final int DEFAULT_MARKER_HEIGHT = 5;
 
-	private final Multimap<Integer, Marker> markersByPos = Multimaps.newMultimap(new HashMap<>(), TreeMultiset::create);
+	private final Multimap<Integer, Marker> markersByPos = Multimaps.newMultimap(
+			new HashMap<>(),
+			() -> new SortedCollection<>(Marker.COMPARATOR, Marker::castOrNull)
+	);
 
 	private final int markerWidth;
 	private final int markerHeight;
@@ -514,11 +516,12 @@ public class MarkableScrollPane extends SmartScrollPane {
 		}
 	}
 
-	private record Marker(Color color, int priority, int pos, Optional<MarkerListener> listener)
-			implements Comparable<Marker> {
-		@Override
-		public int compareTo(@NonNull Marker other) {
-			return other.priority - this.priority;
+	private record Marker(Color color, int priority, int pos, Optional<MarkerListener> listener) {
+		static Comparator<Marker> COMPARATOR = Comparator.comparingInt(Marker::priority).reversed();
+
+		@Nullable
+		static Marker castOrNull(Object o) {
+			return o instanceof Marker marker ? marker : null;
 		}
 
 		class Span {
@@ -557,7 +560,7 @@ public class MarkableScrollPane extends SmartScrollPane {
 		final int pos;
 		final int scaledPos;
 
-		final Multiset<Marker> markers = TreeMultiset.create();
+		final SortedCollection<Marker> markers = new SortedCollection<>(Marker.COMPARATOR, Marker::castOrNull);
 
 		int top;
 		int bottom;
