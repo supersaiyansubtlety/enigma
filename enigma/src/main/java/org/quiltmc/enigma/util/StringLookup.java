@@ -1,6 +1,5 @@
 package org.quiltmc.enigma.util;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -92,8 +91,7 @@ public final class StringLookup<R extends StringLookup.Result> {
 	public static <R extends Result> StringLookup<R> of(
 			int substringDepth, Comparator<R> comparator, Iterable<R> results
 	) {
-		// TODO replace this with Arguments::requirePositive from #346
-		Preconditions.checkArgument(substringDepth > 0, "substringDepth must be positive!");
+		Arguments.requirePositive(substringDepth, "substringDepth");
 
 		final Comparator<ResultWrapper<R>> wrapperComparator = Comparator.comparing(ResultWrapper::result, comparator);
 		// Use a prioritizing set for prefixes to respect the comparator while excluding duplicates.
