@@ -24,7 +24,6 @@ public final class BuiltinPlugin implements EnigmaPlugin {
 	@Override
 	public void init(EnigmaPluginContext ctx) {
 		registerRecordNamingService(ctx);
-		registerParamLocalClassFieldNamingService(ctx);
 		registerEnumNamingService(ctx);
 		registerSpecializedMethodNamingService(ctx);
 		registerDecompilerServices(ctx);
@@ -48,12 +47,6 @@ public final class BuiltinPlugin implements EnigmaPlugin {
 
 		ctx.registerService(JarIndexerService.TYPE, ctx1 -> new RecordIndexingService(visitor));
 		ctx.registerService(NameProposalService.TYPE, ctx1 -> new RecordComponentProposalService(visitor));
-	}
-
-	private static void registerParamLocalClassFieldNamingService(EnigmaPluginContext ctx) {
-		final ParamLocalClassLinkIndexingService indexer = new ParamLocalClassLinkIndexingService();
-		ctx.registerService(JarIndexerService.TYPE, ctx1 -> indexer);
-		ctx.registerService(NameProposalService.TYPE, ctx1 -> new ParamParamLocalClassFieldProposalService(indexer));
 	}
 
 	private static void registerSpecializedMethodNamingService(EnigmaPluginContext ctx) {

@@ -87,21 +87,9 @@ public interface EnigmaProject {
 	/**
 	 * Some entries are represented by other entries which are treated as their 'source of truth'.
 	 *
-	 * <p> These include:
-	 * <table>
-	 *     <tr><th>Entry</th><th>Representative</th></tr>
-	 *     <tr>
-	 *         <td>
-	 *             {@linkplain RecordIndexingService#getDefiniteComponentGetter(FieldEntry) definite record getters}
-	 *         </td>
-	 *         <td>
-	 *             {@linkplain RecordIndexingService#getDefiniteComponentField(MethodEntry) the corresponding field}
-	 *         </td>
-	 *     </tr>
-	 *     <tr>
-	 *         <td>local/anonymous class synthetic fields</td><td>the corresponding param of the enclosing method</td>
-	 *     </tr>
-	 * </table>
+	 *  <p> Currently {@linkplain RecordIndexingService#getDefiniteComponentGetter(FieldEntry) definite record getters}
+	 * are represented by
+	 * {@linkplain RecordIndexingService#getDefiniteComponentField(MethodEntry) their corresponding field}.
 	 *
 	 * @return the representative entry if there is one, or the passed {@code entry} otherwise
 	 */

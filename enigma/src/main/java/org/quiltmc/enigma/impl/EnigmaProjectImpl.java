@@ -38,7 +38,6 @@ import org.quiltmc.enigma.api.translation.representation.entry.LocalVariableEntr
 import org.quiltmc.enigma.api.translation.representation.entry.MethodEntry;
 import org.quiltmc.enigma.impl.bytecode.translator.TranslationClassVisitor;
 import org.quiltmc.enigma.impl.plugin.EnumConstantIndexingService;
-import org.quiltmc.enigma.impl.plugin.ParamLocalClassLinkIndexingService;
 import org.quiltmc.enigma.impl.plugin.RecordIndexingService;
 import org.quiltmc.enigma.impl.translation.mapping.MappingsChecker;
 import org.quiltmc.enigma.util.I18n;
@@ -250,11 +249,7 @@ public class EnigmaProjectImpl implements EnigmaProject {
 			return false;
 		}
 
-		return this.jarIndex.getIndex(EntryIndex.class).hasEntry(obfEntry)
-				|| obfEntry instanceof FieldEntry field
-				&& this.getParamLocalClassLinkIndexingService()
-					.map(service -> service.getLinkedParam(field))
-					.isPresent();
+		return this.jarIndex.getIndex(EntryIndex.class).hasEntry(obfEntry);
 	}
 
 	private boolean isLibraryMethodOverride(MethodEntry methodEntry) {
@@ -323,22 +318,6 @@ public class EnigmaProjectImpl implements EnigmaProject {
 			if (definiteComponent != null) {
 				return definiteComponent;
 			}
-		} else if (entry instanceof FieldEntry field) {
-			final LocalVariableEntry linkedParam = this.getParamLocalClassLinkIndexingService()
-					.map(service -> service.getLinkedParam(field))
-					.orElse(null);
-
-			if (linkedParam != null) {
-				return linkedParam;
-			}
-		} else if (entry instanceof LocalVariableEntry local) {
-			final LocalVariableEntry linkedParam = this.getParamLocalClassLinkIndexingService()
-					.map(service -> service.getLinkedParam(local))
-					.orElse(null);
-
-			if (linkedParam != null) {
-				return linkedParam;
-			}
 		}
 
 		return entry;
@@ -354,12 +333,6 @@ public class EnigmaProjectImpl implements EnigmaProject {
 		return this.getEnigma()
 			.getService(JarIndexerService.TYPE, RecordIndexingService.ID)
 			.map(service -> (RecordIndexingService) service);
-	}
-
-	public Optional<ParamLocalClassLinkIndexingService> getParamLocalClassLinkIndexingService() {
-		return this.getEnigma()
-			.getService(JarIndexerService.TYPE, ParamLocalClassLinkIndexingService.ID)
-			.map(service -> (ParamLocalClassLinkIndexingService) service);
 	}
 
 	private static boolean isEnumValueOfMethod(ClassDefEntry parent, MethodEntry method) {

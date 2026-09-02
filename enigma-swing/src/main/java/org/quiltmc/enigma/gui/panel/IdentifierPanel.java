@@ -20,7 +20,6 @@ import org.quiltmc.enigma.gui.event.ConvertingTextFieldListener;
 import org.quiltmc.enigma.gui.util.GridBagConstraintsBuilder;
 import org.quiltmc.enigma.gui.util.GuiUtil;
 import org.quiltmc.enigma.gui.util.ScaleUtil;
-import org.quiltmc.enigma.impl.EnigmaProjectImpl;
 import org.quiltmc.enigma.util.I18n;
 import org.quiltmc.enigma.util.validation.ValidationContext;
 
@@ -152,17 +151,10 @@ public class IdentifierPanel {
 				th.addCopiableStringRow(I18n.translate("info_panel.identifier.obfuscated"), this.reference.entry.getName());
 				th.addCopiableStringRow(I18n.translate("info_panel.identifier.method_descriptor"), me.getDesc().toString());
 			} else if (this.reference.entry instanceof LocalVariableEntry obfLocal) {
-				// DEBUG
-				// final LocalVariableEntry effectiveObfLocal = ((EnigmaProjectImpl) this.gui.getController().getProject())
-				// 		.getParamLocalClassLinkIndexingService()
-				// 		.map(service -> service.getLinkedParam(obfLocal))
-				// 		.orElse(obfLocal);
-				final LocalVariableEntry effectiveObfLocal = obfLocal;
-
-				final LocalVariableEntry effectiveDeobfLocal = project.getRemapper().deobfuscate(effectiveObfLocal);
+				final LocalVariableEntry effectiveDeobfLocal = project.getRemapper().deobfuscate(obfLocal);
 
 				final EditableType type;
-				if (effectiveObfLocal.isArgument()) {
+				if (obfLocal.isArgument()) {
 					type = EditableType.PARAMETER;
 				} else {
 					type = EditableType.LOCAL_VARIABLE;
@@ -176,7 +168,7 @@ public class IdentifierPanel {
 				// type
 				EntryIndex index = project.getJarIndex().getIndex(EntryIndex.class);
 				// EntryIndex only contains obf entries, so use the obf entry to look up the local's descriptor
-				final LocalVariableDefEntry definition = index.getDefinition(effectiveObfLocal);
+				final LocalVariableDefEntry definition = index.getDefinition(obfLocal);
 				final String localDesc = definition == null
 						? I18n.translate("info_panel.identifier.type.unknown")
 						: toReadableType(project.getRemapper().deobfuscate(definition.getDesc()));

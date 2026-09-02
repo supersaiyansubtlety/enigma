@@ -16,10 +16,6 @@ public final class TestEntryFactory {
 		return new ClassEntry(name);
 	}
 
-	public static ClassEntry newInnerClass(ClassEntry outerClass, String innerName) {
-		return new ClassEntry(outerClass.getFullName() + "$" + innerName);
-	}
-
 	public static FieldEntry newField(String className, String fieldName, String fieldType) {
 		return newField(newClass(className), fieldName, fieldType);
 	}

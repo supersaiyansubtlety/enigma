@@ -9,9 +9,6 @@
 			},
 			{
 				"id": "enigma:record_component_indexer"
-			},
-			{
-				"id": "enigma:param_synthetic_field_indexer"
 			}
 		],
 		"name_proposal": [
@@ -29,9 +26,6 @@
 			},
 			{
 				"id": "enigma:record_component_proposer"
-			},
-			{
-				"id": "enigma:param_synthetic_field_name_proposer"
 			}
 		]
 	}
