@@ -5,6 +5,7 @@ import org.quiltmc.enigma.api.EnigmaProject;
 import org.quiltmc.enigma.api.analysis.EntryReference;
 import org.quiltmc.enigma.api.analysis.index.jar.EntryIndex;
 import org.quiltmc.enigma.api.translation.mapping.EntryChange;
+import org.quiltmc.enigma.api.translation.mapping.EntryMapping;
 import org.quiltmc.enigma.api.translation.representation.TypeDescriptor;
 import org.quiltmc.enigma.api.translation.representation.entry.ClassEntry;
 import org.quiltmc.enigma.api.translation.representation.entry.Entry;
@@ -57,7 +58,7 @@ public class IdentifierPanel {
 		this.ui.setEnabled(false);
 	}
 
-	public void setReference(EntryReference<Entry<?>, Entry<?>> reference) {
+	public void setReference(@Nullable EntryReference<Entry<?>, Entry<?>> reference) {
 		this.reference = reference;
 		this.refreshReference();
 	}
@@ -81,13 +82,17 @@ public class IdentifierPanel {
 		return true;
 	}
 
-	public void refreshReference() {
+	private void refreshReference() {
 		final EnigmaProject project = this.gui.getController().getProject();
-		final Entry<?> deobfEntry = this.reference == null ? null : project.getRemapper().deobfuscate(this.reference.entry);
+		final Entry<?> obfEntry = this.reference == null ? null : this.reference.entry;
+		final Entry<?> deobfEntry = obfEntry == null ? null : project.getRemapper().deobfuscate(obfEntry);
 
 		// Prevent IdentifierPanel from being rebuilt if you didn't click off.
 		if (this.lastReference == this.reference && this.nameField != null) {
 			if (!this.nameField.hasChanges()) {
+				// nameField != null => lastReference != null => reference != null => obfEntry != null =>
+				assert deobfEntry != null;
+
 				final String name;
 
 				// Find what to set the name to.
@@ -99,9 +104,8 @@ public class IdentifierPanel {
 						throw new IllegalStateException("constructor method entry to render has no parent!");
 					}
 
-					name = parent.isInnerClass() ? parent.getName() : parent.getFullName();
-				} else if (deobfEntry instanceof ClassEntry classEntry && !classEntry.isInnerClass()) {
-					name = classEntry.getFullName();
+					// inner classes return their simple name, outer classes return their full name
+					name = parent.getName();
 				} else {
 					name = deobfEntry.getName();
 				}
@@ -118,67 +122,65 @@ public class IdentifierPanel {
 
 		TableHelper th = new TableHelper(this.ui, this.reference, this.gui);
 		th.begin();
-		if (this.reference == null) {
+		if (obfEntry == null) {
 			this.ui.setEnabled(false);
 		} else {
 			this.ui.setEnabled(true);
 
-			if (deobfEntry instanceof ClassEntry ce) {
-				String name = ce.isInnerClass() ? ce.getName() : ce.getFullName();
-				this.nameField = th.addRenameTextField(EditableType.CLASS, name);
-				th.addCopiableStringRow(I18n.translate("info_panel.identifier.obfuscated"), this.reference.entry.getName());
+			if (deobfEntry instanceof ClassEntry clazz) {
+				// inner classes return their simple name, outer classes return their full name
+				this.nameField = th.addRenameTextField(EditableType.CLASS, clazz.getName());
+				th.addCopiableStringRow(I18n.translate("info_panel.identifier.obfuscated"), obfEntry.getName());
 
-				if (ce.getParent() != null) {
-					th.addCopiableStringRow(I18n.translate("info_panel.identifier.outer_class"), ce.getParent().getFullName());
+				if (clazz.getParent() != null) {
+					th.addCopiableStringRow(I18n.translate("info_panel.identifier.outer_class"), clazz.getParent().getFullName());
 				}
-			} else if (deobfEntry instanceof FieldEntry fe) {
-				this.nameField = th.addRenameTextField(EditableType.FIELD, fe.getName());
-				th.addStringRow(I18n.translate("info_panel.identifier.class"), fe.getParent().getFullName());
-				th.addCopiableStringRow(I18n.translate("info_panel.identifier.obfuscated"), this.reference.entry.getName());
-				th.addCopiableStringRow(I18n.translate("info_panel.identifier.type"), toReadableType(fe.getDesc()));
-			} else if (deobfEntry instanceof MethodEntry me) {
-				if (me.isConstructor()) {
-					ClassEntry ce = me.getParent();
-					if (ce != null) {
-						String name = ce.isInnerClass() ? ce.getName() : ce.getFullName();
-						this.nameField = th.addRenameTextField(EditableType.CLASS, name);
+			} else if (deobfEntry instanceof FieldEntry field) {
+				this.nameField = th.addRenameTextField(EditableType.FIELD, field.getName());
+				th.addStringRow(I18n.translate("info_panel.identifier.class"), field.getParent().getFullName());
+				th.addCopiableStringRow(I18n.translate("info_panel.identifier.obfuscated"), obfEntry.getName());
+				th.addCopiableStringRow(I18n.translate("info_panel.identifier.type"), toReadableType(field.getDesc()));
+			} else if (deobfEntry instanceof MethodEntry method) {
+				if (method.isConstructor()) {
+					final ClassEntry parent = method.getParent();
+					if (parent != null) {
+						// inner classes return their simple name, outer classes return their full name
+						this.nameField = th.addRenameTextField(EditableType.CLASS, parent.getName());
 					}
 				} else {
-					this.nameField = th.addRenameTextField(EditableType.METHOD, me.getName());
-					th.addStringRow(I18n.translate("info_panel.identifier.class"), me.getParent().getFullName());
+					this.nameField = th.addRenameTextField(EditableType.METHOD, method.getName());
+					th.addStringRow(I18n.translate("info_panel.identifier.class"), method.getParent().getFullName());
 				}
 
-				th.addCopiableStringRow(I18n.translate("info_panel.identifier.obfuscated"), this.reference.entry.getName());
-				th.addCopiableStringRow(I18n.translate("info_panel.identifier.method_descriptor"), me.getDesc().toString());
-			} else if (this.reference.entry instanceof LocalVariableEntry obfLocal) {
-				final LocalVariableEntry effectiveDeobfLocal = project.getRemapper().deobfuscate(obfLocal);
-
+				th.addCopiableStringRow(I18n.translate("info_panel.identifier.obfuscated"), obfEntry.getName());
+				th.addCopiableStringRow(I18n.translate("info_panel.identifier.method_descriptor"), method.getDesc().toString());
+			} else if (deobfEntry instanceof LocalVariableEntry local) {
 				final EditableType type;
-				if (obfLocal.isArgument()) {
+				if (local.isArgument()) {
 					type = EditableType.PARAMETER;
 				} else {
 					type = EditableType.LOCAL_VARIABLE;
 				}
 
-				this.nameField = th.addRenameTextField(type, effectiveDeobfLocal.getName());
-				th.addStringRow(I18n.translate("info_panel.identifier.class"), effectiveDeobfLocal.getContainingClass().getFullName());
-				th.addCopiableStringRow(I18n.translate("info_panel.identifier.method"), effectiveDeobfLocal.getParent().getName());
-				th.addStringRow(I18n.translate("info_panel.identifier.index"), Integer.toString(effectiveDeobfLocal.getIndex()));
+				this.nameField = th.addRenameTextField(type, local.getName());
+				th.addStringRow(I18n.translate("info_panel.identifier.class"), local.getContainingClass().getFullName());
+				th.addCopiableStringRow(I18n.translate("info_panel.identifier.method"), local.getParent().getName());
+				th.addStringRow(I18n.translate("info_panel.identifier.index"), Integer.toString(local.getIndex()));
 
 				// type
-				EntryIndex index = project.getJarIndex().getIndex(EntryIndex.class);
+				final EntryIndex index = project.getJarIndex().getIndex(EntryIndex.class);
 				// EntryIndex only contains obf entries, so use the obf entry to look up the local's descriptor
-				final LocalVariableDefEntry definition = index.getDefinition(obfLocal);
-				final String localDesc = definition == null
+				final LocalVariableDefEntry obfLocal = index.getDefinition((LocalVariableEntry) obfEntry);
+				final String localDesc = obfLocal == null
 						? I18n.translate("info_panel.identifier.type.unknown")
-						: toReadableType(project.getRemapper().deobfuscate(definition.getDesc()));
+						: toReadableType(project.getRemapper().deobfuscate(obfLocal.getDesc()));
 
 				th.addCopiableStringRow(I18n.translate("info_panel.identifier.type"), localDesc);
 			} else {
 				throw new IllegalStateException("Unrecognized entry type: " + deobfEntry);
 			}
 
-			var mapping = project.getRemapper().getMapping(this.reference.entry);
+			final EntryMapping mapping = project.getRemapper().getMapping(obfEntry);
 			if (Config.main().development.showMappingSourcePlugin.value() && mapping.tokenType().isProposed()) {
 				th.addStringRow(I18n.translate("dev.source_plugin"), mapping.sourcePluginId());
 			}
@@ -268,28 +270,28 @@ public class IdentifierPanel {
 	}
 
 	private static final class TableHelper {
-		private final Container c;
-		private final EntryReference<Entry<?>, Entry<?>> r;
+		private final Container container;
+		private final EntryReference<Entry<?>, Entry<?>> reference;
 		private final Gui gui;
 		private int row;
 
-		TableHelper(Container c, EntryReference<Entry<?>, Entry<?>> r, Gui gui) {
-			this.c = c;
-			this.r = r;
+		TableHelper(Container container, EntryReference<Entry<?>, Entry<?>> reference, Gui gui) {
+			this.container = container;
+			this.reference = reference;
 			this.gui = gui;
 		}
 
 		public void begin() {
-			this.c.removeAll();
-			this.c.setLayout(new GridBagLayout());
+			this.container.removeAll();
+			this.container.setLayout(new GridBagLayout());
 		}
 
 		public void addRow(Component c1, Component c2) {
 			GridBagConstraintsBuilder cb = GridBagConstraintsBuilder.create()
 					.insets(2)
 					.anchor(GridBagConstraints.WEST);
-			this.c.add(c1, cb.pos(0, this.row).build());
-			this.c.add(c2, cb.pos(1, this.row).weightX(1.0).fill(GridBagConstraints.HORIZONTAL).build());
+			this.container.add(c1, cb.pos(0, this.row).build());
+			this.container.add(c2, cb.pos(1, this.row).weightX(1.0).fill(GridBagConstraints.HORIZONTAL).build());
 
 			this.row += 1;
 		}
@@ -319,7 +321,7 @@ public class IdentifierPanel {
 				default -> throw new IllegalStateException("Unexpected value: " + type);
 			};
 
-			if (this.gui.getController().getProject().isRenamable(this.r)) {
+			if (this.reference != null && this.gui.getController().getProject().isRenamable(this.reference)) {
 				ConvertingTextField field = this.addConvertingTextField(description, c2);
 				field.setEditable(this.gui.isEditable(type));
 				return field;
@@ -339,7 +341,7 @@ public class IdentifierPanel {
 
 		public void end() {
 			// Add an empty panel with y-weight=1 so that all the other elements get placed at the top edge
-			this.c.add(new JPanel(), GridBagConstraintsBuilder.create().pos(0, this.row).weight(0.0, 1.0).build());
+			this.container.add(new JPanel(), GridBagConstraintsBuilder.create().pos(0, this.row).weight(0.0, 1.0).build());
 		}
 	}
 }

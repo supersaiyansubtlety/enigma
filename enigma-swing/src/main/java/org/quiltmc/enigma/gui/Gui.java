@@ -434,7 +434,7 @@ public class Gui {
 		editor.navigateToToken(tokens.get(0));
 	}
 
-	public void showCursorReference(EntryReference<Entry<?>, Entry<?>> reference) {
+	public void showCursorReference(@Nullable EntryReference<Entry<?>, Entry<?>> reference) {
 		this.infoPanel.setReference(reference);
 	}
 

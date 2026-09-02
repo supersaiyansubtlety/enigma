@@ -261,4 +261,12 @@ public class Utils {
 	public static <I, K, V> Map<K, V> createHashMap(I ignored) {
 		return new HashMap<>();
 	}
+
+	public static int ceilDiv(int dividend, int divisor) {
+		return -Math.floorDiv(-dividend, divisor);
+	}
+
+	public static long ceilDiv(long dividend, long divisor) {
+		return -Math.floorDiv(-dividend, divisor);
+	}
 }
