@@ -59,18 +59,11 @@ public record RecordComponentProposalService(RecordIndexingVisitor visitor) impl
 
 		// remap method to match field
 		final EntryMapping getterMapping = mapping.tokenType() == TokenType.OBFUSCATED
-				? EntryMapping.OBFUSCATED
+				? null
 				: this.createMapping(mapping.targetName(), TokenType.DYNAMIC_PROPOSED);
-		return Map.of(obfGetter, getterMapping);
-	}
-
-	@Override
-	public void validateProposedMapping(Entry<?> entry, EntryMapping mapping, boolean dynamic) {
-		if (dynamic && mapping.tokenType() == TokenType.OBFUSCATED) {
-			return;
-		}
-
-		NameProposalService.super.validateProposedMapping(entry, mapping, dynamic);
+		final Map<Entry<?>, EntryMapping> map = new HashMap<>();
+		map.put(obfGetter, getterMapping);
+		return map;
 	}
 
 	@Override
